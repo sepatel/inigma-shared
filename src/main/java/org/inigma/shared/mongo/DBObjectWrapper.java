@@ -65,6 +65,14 @@ public class DBObjectWrapper implements DBObject {
         return getWrapper(key, defaultValue);
     }
 
+    public DBObjectWrapper getDocument(String key) {
+        return getWrapper(key, null);
+    }
+
+    public DBObjectWrapper getDocument(String key, DBObject defaultValue) {
+        return getWrapper(key, new DBObjectWrapper(defaultValue));
+    }
+
     public Double getDouble(String key) {
         return getDouble(key, null);
     }

@@ -17,9 +17,9 @@ public class MongoDataStore {
     private Mongo mongo;
 
     @Autowired
-    public MongoDataStore(String dbname, Mongo mongo) {
-        this.mongo = mongo;
-        this.db = this.mongo.getDB(dbname);
+    public MongoDataStore(DB db) {
+        this.mongo = db.getMongo();
+        this.db = db;
     }
 
     public GridFS getGridFS() {
