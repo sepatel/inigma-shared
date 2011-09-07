@@ -2,8 +2,11 @@ package org.inigma.shared.webapp;
 
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -26,7 +29,8 @@ public abstract class BaseController {
     }
 
     protected Errors getErrors() {
-        Errors errors = (Errors) RequestContextHolder.getRequestAttributes().getAttribute("errors", RequestAttributes.SCOPE_REQUEST);
+        Errors errors = (Errors) RequestContextHolder.getRequestAttributes().getAttribute("errors",
+                RequestAttributes.SCOPE_REQUEST);
         if (errors == null) {
             throw new IllegalStateException("Errors not properly initialized in the request attributes!");
         }
@@ -36,6 +40,20 @@ public abstract class BaseController {
     protected String getUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (String) authentication.getPrincipal();
+    }
+
+    protected boolean validateNotBlank(String key, HttpServletRequest request) {
+        if (!StringUtils.hasText(request.getParameter(key))) {
+            getErrors().rejectValue(key, "blank");
+            return false;
+        }
+        return true;
+    }
+
+    protected void stopOnValidationErrors() {
+        if (getErrors().hasErrors()) {
+            throw new RuntimeException("TODO Use ValidationException");
+        }
     }
 
     protected ModelAndView view(String view) {
