@@ -52,7 +52,7 @@ public abstract class BaseController {
 
     protected void stopOnValidationErrors() {
         if (getErrors().hasErrors()) {
-            throw new RuntimeException("TODO Use ValidationException");
+            throw new ValidationException(getErrors());
         }
     }
 

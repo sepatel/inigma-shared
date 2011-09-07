@@ -15,6 +15,7 @@ import com.mongodb.CommandResult;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 import com.mongodb.WriteResult;
 
 /**
@@ -39,13 +40,68 @@ public abstract class MongoDaoTemplate<T> {
         this.collection = collection;
     }
 
+    protected Collection<T> convert(final DBCursor cursor) {
+        return new ArrayList<T>() {
+            @Override
+            public boolean contains(Object o) {
+                throw new UnsupportedOperationException("This collection is a cursor");
+            }
+
+            @Override
+            protected void finalize() throws Throwable {
+                cursor.close();
+                super.finalize();
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return cursor.size() == 0;
+            }
+
+            @Override
+            public Iterator<T> iterator() {
+                final Iterator<DBObject> iterator = cursor.iterator();
+                return new Iterator<T>() {
+                    @Override
+                    public boolean hasNext() {
+                        return iterator.hasNext();
+                    }
+
+                    @Override
+                    public T next() {
+                        return convert(iterator.next());
+                    }
+
+                    @Override
+                    public void remove() {
+                        iterator.remove();
+                    }
+                };
+            }
+
+            @Override
+            public int size() {
+                return cursor.size();
+            }
+        };
+    }
+    
+    protected final T convert(DBObject data) {
+        if (data == null) {
+            return null;
+        }
+        return convert(new DBObjectWrapper(data));
+    }
+
+    protected abstract T convert(DBObjectWrapper data);
+
     /**
      * A query retrieving all documents in the collection.
      */
     public Collection<T> find() {
         return convert(getCollection(true).find());
     }
-    
+
     /**
      * A query retrieving all documents in the collection up to the specified limit.
      */
@@ -88,66 +144,15 @@ public abstract class MongoDaoTemplate<T> {
         return pool.getCollection(collection, slave);
     }
 
-    protected Collection<T> convert(final DBCursor cursor) {
-        return new ArrayList<T>() {
-            @Override
-            public boolean isEmpty() {
-                return cursor.size() == 0;
-            }
-
-            @Override
-            public boolean contains(Object o) {
-                throw new UnsupportedOperationException("This collection is a cursor");
-            }
-
-            @Override
-            public int size() {
-                return cursor.size();
-            }
-
-            @Override
-            public Iterator<T> iterator() {
-                return new Iterator<T>() {
-                    @Override
-                    public boolean hasNext() {
-                        boolean next = cursor.hasNext();
-                        if (!next) {
-                            cursor.close();
-                        }
-                        return next;
-                    }
-
-                    @Override
-                    public T next() {
-                        return convert(cursor.next());
-                    }
-
-                    @Override
-                    public void remove() {
-                        cursor.remove();
-                    }
-                };
-            }
-
-            @Override
-            protected void finalize() throws Throwable {
-                cursor.close();
-                super.finalize();
-            }
-        };
-    }
-
-    protected final T convert(DBObject data) {
-        return convert(new DBObjectWrapper(data));
-    }
-
-    protected abstract T convert(DBObjectWrapper data);
-
     protected void throwOnError(WriteResult result) {
         CommandResult lastError = result.getLastError();
         if (lastError != null) {
-            logger.error(lastError.getErrorMessage(), lastError.getException());
-            lastError.throwOnError();
+            try {
+                lastError.throwOnError();
+            } catch (MongoException e) {
+                logger.error(lastError.getErrorMessage(), lastError.getException());
+                throw e;
+            }
         }
     }
 }
