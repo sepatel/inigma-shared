@@ -23,10 +23,15 @@ import com.mongodb.WriteResult;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public abstract class MongoDaoTemplate<T> {
-    private static Log logger = LogFactory.getLog(MongoDaoTemplate.class);
+    protected Log logger = LogFactory.getLog(getClass());
 
     protected final MongoDataStore pool;
     protected final String collection;
+
+    protected MongoDaoTemplate() {
+        // for @Cacheable annotation support. Should never be used actually.
+        this(null, null);
+    }
 
     @Autowired
     public MongoDaoTemplate(MongoDataStore pool, String collection) {
@@ -38,19 +43,19 @@ public abstract class MongoDaoTemplate<T> {
      * A query retrieving all documents in the collection.
      */
     public Collection<T> find() {
-        return convert(getCollection(false).find());
+        return convert(getCollection(true).find());
     }
-
+    
     /**
      * A query retrieving all documents in the collection up to the specified limit.
      */
     public Collection<T> find(int limit) {
-        return convert(getCollection(false).find().limit(limit));
+        return convert(getCollection(true).find().limit(limit));
     }
 
     public Collection<T> find(Map<String, Object> params) {
         BasicDBObject query = new BasicDBObject(params);
-        return convert(getCollection(false).find(query));
+        return convert(getCollection(true).find(query));
     }
 
     /**
@@ -58,7 +63,7 @@ public abstract class MongoDaoTemplate<T> {
      */
     public Collection<T> find(String key, Object value) {
         BasicDBObject query = new BasicDBObject(key, value);
-        return convert(getCollection(false).find(query));
+        return convert(getCollection(true).find(query));
     }
 
     /**
@@ -66,13 +71,13 @@ public abstract class MongoDaoTemplate<T> {
      */
     public T findById(Serializable id) {
         BasicDBObject query = new BasicDBObject("_id", id);
-        return convert(getCollection(false).findOne(query));
+        return convert(getCollection(true).findOne(query));
     }
 
     public Collection<T> findByIds(Collection<?> ids) {
         BasicDBObject inClause = new BasicDBObject("$in", ids);
         BasicDBObject query = new BasicDBObject("_id", inClause);
-        return convert(getCollection(false).find(query));
+        return convert(getCollection(true).find(query));
     }
 
     public DBCollection getCollection() {
