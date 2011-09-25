@@ -22,12 +22,14 @@ public class MongoDataStore {
         this.db = db;
     }
 
-    public GridFS getGridFS() {
-        return new GridFS(db); // default is 'fs'
+    public void endSession() {
+        this.db.requestDone();
     }
 
-    public GridFS getGridFS(String directory) {
-        return new GridFS(db, directory);
+    @Override
+    protected void finalize() throws Throwable {
+        this.mongo.close();
+        super.finalize();
     }
 
     public DBCollection getCollection(String name) {
@@ -42,9 +44,15 @@ public class MongoDataStore {
         return collection;
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        this.mongo.close();
-        super.finalize();
+    public GridFS getGridFS() {
+        return new GridFS(db); // default is 'fs'
+    }
+
+    public GridFS getGridFS(String directory) {
+        return new GridFS(db, directory);
+    }
+
+    public void startSession() {
+        this.db.requestStart();
     }
 }

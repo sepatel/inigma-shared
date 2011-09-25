@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -85,7 +86,7 @@ public abstract class MongoDaoTemplate<T> {
             }
         };
     }
-    
+
     protected final T convert(DBObject data) {
         if (data == null) {
             return null;
@@ -136,6 +137,10 @@ public abstract class MongoDaoTemplate<T> {
         return convert(getCollection(true).find(query));
     }
 
+    protected String generateId() {
+        return UUID.randomUUID().toString();
+    }
+
     public DBCollection getCollection() {
         return pool.getCollection(collection);
     }
@@ -145,7 +150,7 @@ public abstract class MongoDaoTemplate<T> {
     }
 
     protected void throwOnError(WriteResult result) {
-        CommandResult lastError = result.getLastError();
+        CommandResult lastError = result.getCachedLastError();
         if (lastError != null) {
             try {
                 lastError.throwOnError();
