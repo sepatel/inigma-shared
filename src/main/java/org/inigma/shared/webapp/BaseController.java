@@ -1,16 +1,24 @@
 package org.inigma.shared.webapp;
 
-import java.util.Map;
+import java.io.Writer;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.json.JSONException;
+import org.json.JSONWriter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.servlet.ModelAndView;
 
 /**
  * Base controller providing access to a common set of functionality.
@@ -18,14 +26,18 @@ import org.springframework.web.servlet.ModelAndView;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public abstract class BaseController {
-    protected ModelAndView error(String code) {
+    protected final Log logger = LogFactory.getLog(getClass());
+    @Autowired
+    private MessageSource messageSource;
+
+    protected void error(Writer w, String code) {
         getErrors().reject(code);
-        return new ModelAndView("error");
+        response(w, null);
     }
 
-    protected ModelAndView error(String param, String code) {
-        getErrors().rejectValue(param, code);
-        return new ModelAndView("error");
+    protected void error(Writer w, String code, String field) {
+        getErrors().rejectValue(field, code);
+        response(w, null);
     }
 
     protected Errors getErrors() {
@@ -42,6 +54,30 @@ public abstract class BaseController {
         return (String) authentication.getPrincipal();
     }
 
+    protected void response(Writer w, Object data) {
+        List<ObjectError> errors = getErrors().getAllErrors();
+        try {
+            JSONWriter writer = new JSONWriter(w).object();
+            writer.key("data").value(errors.size() == 0 ? data : null);
+            writer.key("success").value(errors.size() == 0);
+            writer.key("errors").array();
+            for (ObjectError error : errors) {
+                writer.object();
+                writer.key("code").value(error.getCode());
+                writer.key("message").value(messageSource.getMessage(error.getCode(), null, error.getCode(), null));
+                if (error instanceof FieldError) {
+                    writer.key("field").value(((FieldError) error).getField());
+                }
+                writer.endObject();
+            }
+            writer.endArray();
+            writer.endObject();
+        } catch (JSONException e) {
+            logger.error("Unable to generate response", e);
+            throw new RuntimeException("Error responding with errors", e);
+        }
+    }
+
     protected boolean validateNotBlank(String key, HttpServletRequest request) {
         if (!StringUtils.hasText(request.getParameter(key))) {
             getErrors().rejectValue(key, "blank");
@@ -50,30 +86,11 @@ public abstract class BaseController {
         return true;
     }
 
-    protected void stopOnValidationErrors() {
-        if (getErrors().hasErrors()) {
-            throw new ValidationException(getErrors());
+    protected boolean validateRequired(String key, HttpServletRequest request) {
+        if (request.getParameter(key) == null) {
+            getErrors().rejectValue(key, "required");
+            return false;
         }
-    }
-
-    protected ModelAndView view(String view) {
-        if (getErrors().hasErrors()) {
-            return new ModelAndView("error");
-        }
-        return new ModelAndView(view);
-    }
-
-    protected ModelAndView view(String view, Map<String, ?> model) {
-        if (getErrors().hasErrors()) {
-            return new ModelAndView("error");
-        }
-        return new ModelAndView(view, model);
-    }
-
-    protected ModelAndView view(String view, String name, Object model) {
-        if (getErrors().hasErrors()) {
-            return new ModelAndView("error");
-        }
-        return new ModelAndView(view, name, model);
+        return true;
     }
 }

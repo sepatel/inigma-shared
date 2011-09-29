@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
+import com.mongodb.MongoURI;
 import com.mongodb.gridfs.GridFS;
 
 /**
@@ -17,9 +18,10 @@ public class MongoDataStore {
     private Mongo mongo;
 
     @Autowired
-    public MongoDataStore(DB db) {
-        this.mongo = db.getMongo();
-        this.db = db;
+    public MongoDataStore(String uri) throws Exception {
+        MongoURI mongoUri = new MongoURI(uri);
+        this.mongo = new Mongo(mongoUri);
+        this.db = mongo.getDB(mongoUri.getDatabase());
     }
 
     public void endSession() {
