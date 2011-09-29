@@ -46,12 +46,20 @@ public class MongoDataStore {
         return collection;
     }
 
+    public DB getDb() {
+        return db;
+    }
+
     public GridFS getGridFS() {
         return new GridFS(db); // default is 'fs'
     }
 
     public GridFS getGridFS(String directory) {
         return new GridFS(db, directory);
+    }
+
+    public Mongo getMongo() {
+        return mongo;
     }
 
     public void startSession() {
