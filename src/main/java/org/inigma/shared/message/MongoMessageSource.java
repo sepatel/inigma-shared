@@ -8,7 +8,7 @@ import org.springframework.context.support.AbstractMessageSource;
 
 public class MongoMessageSource extends AbstractMessageSource {
     @Autowired
-    private MessageTemplate template;
+    private MessageDaoTemplate template;
 
     @Override
     protected MessageFormat resolveCode(String code, Locale locale) {
@@ -19,7 +19,7 @@ public class MongoMessageSource extends AbstractMessageSource {
         return new MessageFormat(message.getValue());
     }
 
-    public void setTemplate(MessageTemplate template) {
+    public void setTemplate(MessageDaoTemplate template) {
         this.template = template;
     }
 }

@@ -1,19 +1,21 @@
 package org.inigma.shared.webapp;
 
 import java.io.Writer;
+import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
@@ -40,6 +42,10 @@ public abstract class BaseController {
         response(w, null);
     }
 
+    protected Authentication getAuthentication() {
+        return SecurityContextHolder.getContext().getAuthentication();
+    }
+
     protected Errors getErrors() {
         Errors errors = (Errors) RequestContextHolder.getRequestAttributes().getAttribute("errors",
                 RequestAttributes.SCOPE_REQUEST);
@@ -49,17 +55,25 @@ public abstract class BaseController {
         return errors;
     }
 
-    protected String getUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (String) authentication.getPrincipal();
+    protected boolean hasNoErrors() {
+        return !getErrors().hasErrors();
     }
 
     protected void response(Writer w, Object data) {
         List<ObjectError> errors = getErrors().getAllErrors();
         try {
             JSONWriter writer = new JSONWriter(w).object();
-            writer.key("data").value(errors.size() == 0 ? data : null);
-            writer.key("success").value(errors.size() == 0);
+            if (hasNoErrors()) {
+                writer.key("data");
+                if (data instanceof String || data instanceof Number || data instanceof Boolean) {
+                    writer.value(data);
+                } else if (data instanceof Collection<?> || data instanceof Array) {
+                    writer.value(new JSONArray(data));
+                } else {
+                    writer.value(new JSONObject(data));
+                }
+            }
+            writer.key("success").value(hasNoErrors());
             writer.key("errors").array();
             for (ObjectError error : errors) {
                 writer.object();
@@ -76,21 +90,5 @@ public abstract class BaseController {
             logger.error("Unable to generate response", e);
             throw new RuntimeException("Error responding with errors", e);
         }
-    }
-
-    protected boolean validateNotBlank(String key, HttpServletRequest request) {
-        if (!StringUtils.hasText(request.getParameter(key))) {
-            getErrors().rejectValue(key, "blank");
-            return false;
-        }
-        return true;
-    }
-
-    protected boolean validateRequired(String key, HttpServletRequest request) {
-        if (request.getParameter(key) == null) {
-            getErrors().rejectValue(key, "required");
-            return false;
-        }
-        return true;
     }
 }

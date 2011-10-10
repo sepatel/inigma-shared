@@ -9,7 +9,6 @@ import java.util.UUID;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.CommandResult;
@@ -35,7 +34,6 @@ public abstract class MongoDaoTemplate<T> {
         this(null, null);
     }
 
-    @Autowired
     public MongoDaoTemplate(MongoDataStore pool, String collection) {
         this.pool = pool;
         this.collection = collection;
@@ -138,7 +136,7 @@ public abstract class MongoDaoTemplate<T> {
     }
 
     protected String generateId() {
-        return UUID.randomUUID().toString();
+        return UUID.randomUUID().toString().replaceAll("\\-", "");
     }
 
     public DBCollection getCollection() {

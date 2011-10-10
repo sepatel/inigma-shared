@@ -13,17 +13,17 @@ import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
 
-public class MessageTemplate extends MongoDaoTemplate<Message> {
-    public MessageTemplate() {
+public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
+    public MessageDaoTemplate() {
         // for cache annotations to work
     }
 
     @Autowired
-    public MessageTemplate(MongoDataStore mds) {
+    public MessageDaoTemplate(MongoDataStore mds) {
         super(mds, "message");
     }
 
-    public MessageTemplate(MongoDataStore mds, String collection) {
+    public MessageDaoTemplate(MongoDataStore mds, String collection) {
         super(mds, collection);
     }
 
