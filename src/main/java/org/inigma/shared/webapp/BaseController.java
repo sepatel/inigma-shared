@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -70,7 +71,7 @@ public abstract class BaseController {
                 writer.key("data");
                 if (data == null) {
                     writer.value(null);
-                } else if (data instanceof String || data instanceof Number || data instanceof Boolean) {
+                } else if (data instanceof String || data instanceof Number || data instanceof Boolean || data instanceof Map<?, ?>) {
                     writer.value(data);
                 } else if (data instanceof Collection<?> || data instanceof Array) {
                     writer.value(new JSONArray(data));
