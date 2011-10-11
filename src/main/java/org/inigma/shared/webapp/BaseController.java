@@ -1,10 +1,11 @@
 package org.inigma.shared.webapp;
 
-import java.io.Writer;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,14 +33,14 @@ public abstract class BaseController {
     @Autowired
     private MessageSource messageSource;
 
-    protected void error(Writer w, String code) {
+    protected void error(HttpServletResponse response, String code) {
         getErrors().reject(code);
-        response(w, null);
+        response(response, null);
     }
 
-    protected void error(Writer w, String code, String field) {
+    protected void error(HttpServletResponse response, String code, String field) {
         getErrors().rejectValue(field, code);
-        response(w, null);
+        response(response, null);
     }
 
     protected Authentication getAuthentication() {
@@ -59,13 +60,17 @@ public abstract class BaseController {
         return !getErrors().hasErrors();
     }
 
-    protected void response(Writer w, Object data) {
+    protected void response(HttpServletResponse response, Object data) {
+        // protected void response(Writer w, Object data) {
+        response.setContentType("application/json");
         List<ObjectError> errors = getErrors().getAllErrors();
         try {
-            JSONWriter writer = new JSONWriter(w).object();
+            JSONWriter writer = new JSONWriter(response.getWriter()).object();
             if (hasNoErrors()) {
                 writer.key("data");
-                if (data instanceof String || data instanceof Number || data instanceof Boolean) {
+                if (data == null) {
+                    writer.value(null);
+                } else if (data instanceof String || data instanceof Number || data instanceof Boolean) {
                     writer.value(data);
                 } else if (data instanceof Collection<?> || data instanceof Array) {
                     writer.value(new JSONArray(data));
@@ -87,6 +92,9 @@ public abstract class BaseController {
             writer.endArray();
             writer.endObject();
         } catch (JSONException e) {
+            logger.error("Unable to generate response", e);
+            throw new RuntimeException("Error responding with errors", e);
+        } catch (IOException e) {
             logger.error("Unable to generate response", e);
             throw new RuntimeException("Error responding with errors", e);
         }

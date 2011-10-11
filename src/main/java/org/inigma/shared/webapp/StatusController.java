@@ -1,7 +1,8 @@
 package org.inigma.shared.webapp;
 
-import java.io.Writer;
 import java.util.HashMap;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.inigma.shared.mongo.MongoDataStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ public class StatusController extends BaseController {
     private MongoDataStore mds;
 
     @RequestMapping(value = "/monitor", method = RequestMethod.GET)
-    public void status(Writer writer) {
+    public void status(HttpServletResponse response) {
         HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("mongoMaster", mds.getMongo().getConnectPoint());
         ReplicaSetStatus replicaSetStatus = mds.getMongo().getReplicaSetStatus();
@@ -27,7 +28,8 @@ public class StatusController extends BaseController {
             map.put("replicaSet", null);
         }
         map.put("mongoVersion", mds.getMongo().getVersion());
-        response(writer, map);
+        map.put("usedDatabases", mds.getMongo().getUsedDatabases());
+        response(response, map);
     }
 
     public void setMongoDataStore(MongoDataStore mds) {
