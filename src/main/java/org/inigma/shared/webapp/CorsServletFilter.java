@@ -10,7 +10,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
-public class XssServletFilter implements Filter {
+/**
+ * This servlet filter adds the headers needed to allow CORS (Cross Origin Resource Sharing) compliant browsers to be
+ * able and make direct ajax calls without the need for a proxy.
+ * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
+ */
+public class CorsServletFilter implements Filter {
     private String accessAllowOrigin;
 
     @Override
