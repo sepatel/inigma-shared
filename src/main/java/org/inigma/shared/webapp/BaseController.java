@@ -84,7 +84,7 @@ public abstract class BaseController {
             for (ObjectError error : errors) {
                 writer.object();
                 writer.key("code").value(error.getCode());
-                writer.key("message").value(messageSource.getMessage(error.getCode(), null, error.getCode(), null));
+                writer.key("message").value(messageSource.getMessage(error.getCode(), error.getArguments(), error.getDefaultMessage(), null));
                 if (error instanceof FieldError) {
                     writer.key("field").value(((FieldError) error).getField());
                 }
