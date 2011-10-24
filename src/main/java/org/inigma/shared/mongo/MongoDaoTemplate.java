@@ -1,8 +1,12 @@
 package org.inigma.shared.mongo;
 
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -90,6 +94,101 @@ public abstract class MongoDaoTemplate<T> {
             return null;
         }
         return convert(new DBObjectWrapper(data));
+    }
+
+    protected T replace(T tosave) {
+        if (tosave == null) {
+            return null;
+        }
+        Object id = null;
+        BasicDBObject update = new BasicDBObject();
+
+        Class<?> clazz = tosave.getClass();
+        try {
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+                for (Annotation annotation : field.getDeclaredAnnotations()) {
+                    MongoField mf = (MongoField) annotation;
+                    String key = mf.value();
+                    if ("".equals(key)) {
+                        key = field.getName();
+                    }
+                    if ("_id".equals(key)) {
+                        id = field.get(tosave);
+                        if (id == null) {
+                            id = generateId();
+                        }
+                        update.put("_id", id);
+                    } else {
+                        update.put(key, field.get(tosave));
+                    }
+                }
+            }
+            BasicDBObject query = new BasicDBObject("_id", id);
+            DBObject o = getCollection(false).findAndModify(query, null, null, false, update, true, true);
+            return convert(o);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected final <B> B convert(DBObjectWrapper data, Class<B> clazz) {
+        try {
+            B bean = clazz.newInstance();
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+                for (Annotation annotation : field.getDeclaredAnnotations()) {
+                    if (MongoField.class.isInstance(annotation)) {
+                        MongoField mf = (MongoField) annotation;
+                        String key = mf.value();
+                        if ("".equals(key)) {
+                            key = field.getName();
+                        }
+                        if (data.containsField(key)) {
+                            Class<?> type = field.getType();
+                            if (Byte.class.isAssignableFrom(type)) {
+                                field.setByte(bean, data.getByte(key));
+                            } else if (Boolean.class.isAssignableFrom(type)) {
+                                field.setBoolean(bean, data.getBoolean(key));
+                            } else if (Calendar.class.isAssignableFrom(type)) {
+                                Date date = data.getDate(key);
+                                Calendar c = null;
+                                if (date != null) {
+                                    c = Calendar.getInstance();
+                                    c.setTimeInMillis(date.getTime());
+                                }
+                                field.set(bean, c);
+//                            } else if (Character.class.isAssignableFrom(type)) {
+                                // TODO: Handle this correctly later
+                            } else if (Date.class.isAssignableFrom(type)) {
+                                field.set(bean, data.getDate(key));
+                            } else if (Double.class.isAssignableFrom(type)) {
+                                field.setDouble(bean, data.getDouble(key));
+                            } else if (Float.class.isAssignableFrom(type)) {
+                                field.setFloat(bean, data.getFloat(key));
+                            } else if (Integer.class.isAssignableFrom(type)) {
+                                field.setInt(bean, data.getInteger(key));
+                            } else if (Long.class.isAssignableFrom(type)) {
+                                field.setLong(bean, data.getLong(key));
+                            } else if (Short.class.isAssignableFrom(type)) {
+                                field.setShort(bean, data.getShort(key));
+                            } else if (String.class.isAssignableFrom(type)) {
+                                field.set(bean, data.getString(key));
+                            } else {
+                                logger.warn("Unhandled type: " + type.getName());
+                            }
+                        }
+                    }
+                }
+            }
+            return bean;
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected abstract T convert(DBObjectWrapper data);
