@@ -33,165 +33,15 @@ public abstract class MongoDaoTemplate<T> {
     protected final MongoDataStore pool;
     protected final String collection;
 
-    protected MongoDaoTemplate() {
-        // for @Cacheable annotation support. Should never be used actually.
-        this(null, null);
-    }
-
     public MongoDaoTemplate(MongoDataStore pool, String collection) {
         this.pool = pool;
         this.collection = collection;
     }
 
-    protected Collection<T> convert(final DBCursor cursor) {
-        return new ArrayList<T>() {
-            @Override
-            public boolean contains(Object o) {
-                throw new UnsupportedOperationException("This collection is a cursor");
-            }
-
-            @Override
-            protected void finalize() throws Throwable {
-                cursor.close();
-                super.finalize();
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return cursor.size() == 0;
-            }
-
-            @Override
-            public Iterator<T> iterator() {
-                final Iterator<DBObject> iterator = cursor.iterator();
-                return new Iterator<T>() {
-                    @Override
-                    public boolean hasNext() {
-                        return iterator.hasNext();
-                    }
-
-                    @Override
-                    public T next() {
-                        return convert(iterator.next());
-                    }
-
-                    @Override
-                    public void remove() {
-                        iterator.remove();
-                    }
-                };
-            }
-
-            @Override
-            public int size() {
-                return cursor.size();
-            }
-        };
+    protected MongoDaoTemplate() {
+        // for @Cacheable annotation support. Should never be used actually.
+        this(null, null);
     }
-
-    protected final T convert(DBObject data) {
-        if (data == null) {
-            return null;
-        }
-        return convert(new DBObjectWrapper(data));
-    }
-
-    protected T replace(T tosave) {
-        if (tosave == null) {
-            return null;
-        }
-        Object id = null;
-        BasicDBObject update = new BasicDBObject();
-
-        Class<?> clazz = tosave.getClass();
-        try {
-            for (Field field : clazz.getDeclaredFields()) {
-                field.setAccessible(true);
-                for (Annotation annotation : field.getDeclaredAnnotations()) {
-                    MongoField mf = (MongoField) annotation;
-                    String key = mf.value();
-                    if ("".equals(key)) {
-                        key = field.getName();
-                    }
-                    if ("_id".equals(key)) {
-                        id = field.get(tosave);
-                        if (id == null) {
-                            id = generateId();
-                        }
-                        update.put("_id", id);
-                    } else {
-                        update.put(key, field.get(tosave));
-                    }
-                }
-            }
-            BasicDBObject query = new BasicDBObject("_id", id);
-            DBObject o = getCollection(false).findAndModify(query, null, null, false, update, true, true);
-            return convert(o);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected final <B> B convert(DBObjectWrapper data, Class<B> clazz) {
-        try {
-            B bean = clazz.newInstance();
-            for (Field field : clazz.getDeclaredFields()) {
-                field.setAccessible(true);
-                for (Annotation annotation : field.getDeclaredAnnotations()) {
-                    if (MongoField.class.isInstance(annotation)) {
-                        MongoField mf = (MongoField) annotation;
-                        String key = mf.value();
-                        if ("".equals(key)) {
-                            key = field.getName();
-                        }
-                        if (data.containsField(key)) {
-                            Class<?> type = field.getType();
-                            if (Byte.class.isAssignableFrom(type)) {
-                                field.setByte(bean, data.getByte(key));
-                            } else if (Boolean.class.isAssignableFrom(type)) {
-                                field.setBoolean(bean, data.getBoolean(key));
-                            } else if (Calendar.class.isAssignableFrom(type)) {
-                                Date date = data.getDate(key);
-                                Calendar c = null;
-                                if (date != null) {
-                                    c = Calendar.getInstance();
-                                    c.setTimeInMillis(date.getTime());
-                                }
-                                field.set(bean, c);
-//                            } else if (Character.class.isAssignableFrom(type)) {
-                                // TODO: Handle this correctly later
-                            } else if (Date.class.isAssignableFrom(type)) {
-                                field.set(bean, data.getDate(key));
-                            } else if (Double.class.isAssignableFrom(type)) {
-                                field.setDouble(bean, data.getDouble(key));
-                            } else if (Float.class.isAssignableFrom(type)) {
-                                field.setFloat(bean, data.getFloat(key));
-                            } else if (Integer.class.isAssignableFrom(type)) {
-                                field.setInt(bean, data.getInteger(key));
-                            } else if (Long.class.isAssignableFrom(type)) {
-                                field.setLong(bean, data.getLong(key));
-                            } else if (Short.class.isAssignableFrom(type)) {
-                                field.setShort(bean, data.getShort(key));
-                            } else if (String.class.isAssignableFrom(type)) {
-                                field.set(bean, data.getString(key));
-                            } else {
-                                logger.warn("Unhandled type: " + type.getName());
-                            }
-                        }
-                    }
-                }
-            }
-            return bean;
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected abstract T convert(DBObjectWrapper data);
 
     /**
      * A query retrieving all documents in the collection.
@@ -234,16 +84,133 @@ public abstract class MongoDaoTemplate<T> {
         return convert(getCollection(true).find(query));
     }
 
-    protected String generateId() {
-        return UUID.randomUUID().toString().replaceAll("\\-", "");
-    }
-
     public DBCollection getCollection() {
         return pool.getCollection(collection);
     }
 
     public DBCollection getCollection(boolean slave) {
         return pool.getCollection(collection, slave);
+    }
+
+    protected Collection<T> convert(final DBCursor cursor) {
+        return new ArrayList<T>() {
+            @Override
+            public boolean contains(Object o) {
+                throw new UnsupportedOperationException("This collection is a cursor");
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return cursor.size() == 0;
+            }
+
+            @Override
+            public Iterator<T> iterator() {
+                final Iterator<DBObject> iterator = cursor.iterator();
+                return new Iterator<T>() {
+                    @Override
+                    public boolean hasNext() {
+                        return iterator.hasNext();
+                    }
+
+                    @Override
+                    public T next() {
+                        return convert(iterator.next());
+                    }
+
+                    @Override
+                    public void remove() {
+                        iterator.remove();
+                    }
+                };
+            }
+
+            @Override
+            public int size() {
+                return cursor.size();
+            }
+
+            @Override
+            protected void finalize() throws Throwable {
+                cursor.close();
+                super.finalize();
+            }
+        };
+    }
+
+    protected final T convert(DBObject data) {
+        if (data == null) {
+            return null;
+        }
+        return convert(new DBObjectWrapper(data));
+    }
+
+    protected abstract T convert(DBObjectWrapper data);
+
+    protected final <B> B convert(DBObjectWrapper data, Class<B> clazz) {
+        try {
+            B bean = clazz.newInstance();
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+                for (Annotation annotation : field.getDeclaredAnnotations()) {
+                    if (MongoMapping.class.isInstance(annotation)) {
+                        MongoMapping mf = (MongoMapping) annotation;
+                        String key = mf.value();
+                        if ("".equals(key)) {
+                            key = field.getName();
+                        }
+                        if (data.containsField(key)) {
+                            Class<?> type = field.getType();
+                            if (Byte.class.isAssignableFrom(type)) {
+                                field.setByte(bean, data.getByte(key));
+                            } else if (Boolean.class.isAssignableFrom(type)) {
+                                field.setBoolean(bean, data.getBoolean(key));
+                            } else if (Calendar.class.isAssignableFrom(type)) {
+                                Date date = data.getDate(key);
+                                Calendar c = null;
+                                if (date != null) {
+                                    c = Calendar.getInstance();
+                                    c.setTimeInMillis(date.getTime());
+                                }
+                                field.set(bean, c);
+                            } else if (Character.class.isAssignableFrom(type) || char.class.isAssignableFrom(type)) {
+                                String value = data.getString(key);
+                                if (value == null || value.length() == 0) {
+                                    field.set(bean, null);
+                                } else {
+                                    field.set(bean, value.charAt(0));
+                                }
+                            } else if (Date.class.isAssignableFrom(type)) {
+                                field.set(bean, data.getDate(key));
+                            } else if (Double.class.isAssignableFrom(type) || double.class.isAssignableFrom(type)) {
+                                field.setDouble(bean, data.getDouble(key));
+                            } else if (Float.class.isAssignableFrom(type) || float.class.isAssignableFrom(type)) {
+                                field.setFloat(bean, data.getFloat(key));
+                            } else if (Integer.class.isAssignableFrom(type) || int.class.isAssignableFrom(type)) {
+                                field.setInt(bean, data.getInteger(key));
+                            } else if (Long.class.isAssignableFrom(type) || long.class.isAssignableFrom(type)) {
+                                field.setLong(bean, data.getLong(key));
+                            } else if (Short.class.isAssignableFrom(type) || short.class.isAssignableFrom(type)) {
+                                field.setShort(bean, data.getShort(key));
+                            } else if (String.class.isAssignableFrom(type)) {
+                                field.set(bean, data.getString(key));
+                            } else { // Document Type
+                                field.set(bean, convert(data.getDocument(key), type));
+                            }
+                        }
+                    }
+                }
+            }
+            return bean;
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected String generateId() {
+        return UUID.randomUUID().toString().replaceAll("\\-", "");
     }
 
     protected void throwOnError(WriteResult result) {

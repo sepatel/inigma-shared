@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface MongoField {
+public @interface MongoMapping {
     String value() default "";
+    String property() default "";
 }
