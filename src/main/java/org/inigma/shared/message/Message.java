@@ -1,21 +1,16 @@
 package org.inigma.shared.message;
 
-import java.util.Date;
-
 public class Message {
     private String code;
+    private String locale;
     private String value;
-    private Date modified;
 
     public String getCode() {
         return code;
     }
 
-    public Date getModifiedDate() {
-        if (modified == null) {
-            modified = new Date();
-        }
-        return modified;
+    public String getLocale() {
+        return locale;
     }
 
     public String getValue() {
@@ -26,8 +21,8 @@ public class Message {
         this.code = code;
     }
 
-    public void setModified(Date modified) {
-        this.modified = modified;
+    public void setLocale(String locale) {
+        this.locale = locale;
     }
 
     public void setValue(String value) {

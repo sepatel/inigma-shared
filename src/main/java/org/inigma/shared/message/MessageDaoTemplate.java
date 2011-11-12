@@ -11,7 +11,6 @@ import com.googlecode.ehcache.annotations.Cacheable;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
 
 public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
     public MessageDaoTemplate() {
@@ -27,17 +26,8 @@ public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
         super(mds, collection);
     }
 
-    @Override
-    protected Message convert(DBObjectWrapper data) {
-        Message message = new Message();
-        message.setCode(data.getString("_id"));
-        message.setValue(data.getString("value"));
-        return message;
-    }
-
-    public Message delete(String code) {
-        DBObject query = new BasicDBObject("_id", code);
-        return convert(getCollection(false).findAndRemove(query));
+    public Message delete(String code, String locale) {
+        return convert(getCollection(false).findAndRemove(createId(code, locale)));
     }
 
     @Cacheable(cacheName = "message.all")
@@ -46,16 +36,31 @@ public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
     }
 
     @Cacheable(cacheName = "message")
-    public Message findById(String code) {
-        return super.findById(code);
+    public Message findById(String code, String locale) {
+        DBObject id = createId(code, locale);
+        return convert(getCollection(true).findOne(id));
     }
 
     public void save(Message message) {
-        DBObject query = new BasicDBObject("_id", message.getCode());
+        DBObject query = new BasicDBObject("_id", createId(message.getCode(), message.getLocale()));
         DBObject data = new BasicDBObject("value", message.getValue());
-        data.put("modified", message.getModifiedDate());
         DBObject dataset = new BasicDBObject("$set", data);
-        WriteResult result = getCollection(false).update(query, dataset, true, false, WriteConcern.SAFE);
-        throwOnError(result);
+        getCollection(false).update(query, dataset, true, false, WriteConcern.SAFE);
+    }
+
+    @Override
+    protected Message convert(DBObjectWrapper data) {
+        Message message = new Message();
+        DBObjectWrapper document = data.getDocument("_id");
+        message.setCode(document.getString("code"));
+        message.setLocale(document.getString("locale"));
+        message.setValue(data.getString("value"));
+        return message;
+    }
+
+    private DBObject createId(String code, String locale) {
+        DBObject id = new BasicDBObject("code", code);
+        id.put("locale", locale);
+        return id;
     }
 }
