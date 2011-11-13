@@ -1,10 +1,20 @@
 package org.inigma.shared.config;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.inigma.shared.mongo.MongoDataStore;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.mongodb.*;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 
 /**
  * Dynamically loads and reloads configuration settings from a collection. The data model is presumed to be in the
@@ -25,24 +35,20 @@ public class Configuration {
     private final Set<ConfigurationObserver> observers;
     private final MongoDataStore ds;
     private final String collection;
+    private TimerTask reloadTask;
 
     @Autowired
-    public Configuration(MongoDataStore ds, String collection, long pollingFrequency) {
+    public Configuration(MongoDataStore ds) {
+        this(ds, "config");
+    }
+
+    public Configuration(MongoDataStore ds, String collection) {
         this.configs = new HashMap<String, Object>();
         this.observers = new LinkedHashSet<ConfigurationObserver>();
         this.ds = ds;
         this.collection = collection;
 
         reload();
-
-        if (pollingFrequency > 0) {
-            TIMER.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    reload();
-                }
-            }, pollingFrequency, pollingFrequency);
-        }
     }
 
     public boolean addObserver(ConfigurationObserver listener) {
@@ -50,7 +56,7 @@ public class Configuration {
     }
 
     public Boolean getBoolean(String key) {
-        return getBoolean(key, null);
+        return get(key);
     }
 
     public Boolean getBoolean(String key, Boolean defaultValue) {
@@ -58,7 +64,11 @@ public class Configuration {
     }
 
     public Byte getByte(String key) {
-        return getByte(key, null);
+        Number value = get(key);
+        if (value == null) {
+            return null;
+        }
+        return value.byteValue();
     }
 
     public Byte getByte(String key, Number defaultValue) {
@@ -70,7 +80,7 @@ public class Configuration {
     }
 
     public Date getDate(String key) {
-        return getDate(key, null);
+        return get(key);
     }
 
     public Date getDate(String key, Date defaultValue) {
@@ -78,7 +88,11 @@ public class Configuration {
     }
 
     public Double getDouble(String key) {
-        return getDouble(key, null);
+        Number value = get(key);
+        if (value == null) {
+            return null;
+        }
+        return value.doubleValue();
     }
 
     public Double getDouble(String key, Number defaultValue) {
@@ -90,7 +104,11 @@ public class Configuration {
     }
 
     public Float getFloat(String key) {
-        return getFloat(key, null);
+        Number value = get(key);
+        if (value == null) {
+            return null;
+        }
+        return value.floatValue();
     }
 
     public Float getFloat(String key, Number defaultValue) {
@@ -102,7 +120,11 @@ public class Configuration {
     }
 
     public Integer getInteger(String key) {
-        return getInteger(key, null);
+        Number value = get(key);
+        if (value == null) {
+            return null;
+        }
+        return value.intValue();
     }
 
     public Integer getInteger(String key, Number defaultValue) {
@@ -118,7 +140,7 @@ public class Configuration {
     }
 
     public <T> List<T> getList(String key) {
-        return getList(key, null);
+        return get(key);
     }
 
     public <T> List<T> getList(String key, List<T> defaultValue) {
@@ -126,7 +148,11 @@ public class Configuration {
     }
 
     public Long getLong(String key) {
-        return getLong(key, null);
+        Number value = get(key);
+        if (value == null) {
+            return null;
+        }
+        return value.longValue();
     }
 
     public Long getLong(String key, Number defaultValue) {
@@ -138,7 +164,7 @@ public class Configuration {
     }
 
     public <T> Map<String, T> getMap(String key) {
-        return getMap(key, null);
+        return get(key);
     }
 
     public <T> Map<String, T> getMap(String key, Map<String, T> defaultValue) {
@@ -146,7 +172,11 @@ public class Configuration {
     }
 
     public Short getShort(String key) {
-        return getShort(key, null);
+        Number value = get(key);
+        if (value == null) {
+            return null;
+        }
+        return value.shortValue();
     }
 
     public Short getShort(String key, Number defaultValue) {
@@ -158,7 +188,7 @@ public class Configuration {
     }
 
     public String getString(String key) {
-        return getString(key, null);
+        return get(key);
     }
 
     public String getString(String key, String defaultValue) {
@@ -189,15 +219,45 @@ public class Configuration {
         return true;
     }
 
+    public void setPollingFrequency(long pollingFrequency) {
+        if (reloadTask != null) {
+            reloadTask.cancel();
+        }
+        if (pollingFrequency > 0) {
+            reloadTask = new TimerTask() {
+                @Override
+                public void run() {
+                    reload();
+                }
+            };
+            TIMER.schedule(reloadTask, pollingFrequency, pollingFrequency);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <T> T get(String key) {
+        if (!configs.containsKey(key)) { // load configuration into the cache if missing
+            DBObject query = new BasicDBObject(KEY, key);
+            DBObject dbObject = ds.getCollection(collection, true).findOne(query);
+            if (dbObject == null) {
+                throw new IllegalStateException("Configuration " + key + " not found!");
+            }
+            configs.put(key, dbObject.get(VALUE));
+        }
+        
+        Object value = configs.get(key);
+        if (value == null) {
+            return null;
+        }
+        return (T) value;
+    }
+
     @SuppressWarnings("unchecked")
     protected <T> T get(String key, T defaultValue) {
         if (!configs.containsKey(key)) { // load configuration into the cache if missing
             DBObject query = new BasicDBObject(KEY, key);
             DBObject dbObject = ds.getCollection(collection, true).findOne(query);
             if (dbObject == null) {
-                if (defaultValue == null) {
-                    throw new IllegalStateException("Configuration " + key + " not found!");
-                }
                 return defaultValue;
             }
             configs.put(key, dbObject.get(VALUE));
@@ -208,12 +268,6 @@ public class Configuration {
             return null;
         }
         return (T) value;
-    }
-
-    private void changed(String key, Object ovalue, Object value) {
-        for (ConfigurationObserver observer : observers) {
-            observer.onConfigurationUpdate(key, ovalue, value);
-        }
     }
 
     void reload() {
@@ -232,6 +286,12 @@ public class Configuration {
         for (String toBeRemoved : existing) {
             Object removed = configs.remove(toBeRemoved);
             changed(toBeRemoved, removed, null);
+        }
+    }
+
+    private void changed(String key, Object ovalue, Object value) {
+        for (ConfigurationObserver observer : observers) {
+            observer.onConfigurationUpdate(key, ovalue, value);
         }
     }
 

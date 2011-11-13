@@ -7,9 +7,5 @@
     <constructor-arg value="mongodb://192.168.1.100/junit" />
   </bean>
 
-  <bean id="configuration" class="org.inigma.shared.config.Configuration">
-    <constructor-arg ref="datasource" />
-    <constructor-arg value="config" />
-    <constructor-arg value="0" type="long" />
-  </bean>
+  <bean id="configuration" class="org.inigma.shared.config.Configuration" />
 </beans>
