@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.inigma.shared.webapp.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class ConfigController extends BaseController {
@@ -24,111 +24,117 @@ public class ConfigController extends BaseController {
     private Configuration configuration;
 
     @RequestMapping(value = "/config/boolean/{key}", method = RequestMethod.GET)
-    public void getConfigBoolean(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getBoolean(key, null));
+    @ResponseBody
+    public Boolean getConfigBoolean(@PathVariable String key) {
+        return configuration.getBoolean(key, null);
     }
 
     @RequestMapping(value = "/config/byte/{key}", method = RequestMethod.GET)
-    public void getConfigByte(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getByte(key, null));
+    @ResponseBody
+    public Byte getConfigByte(@PathVariable String key) {
+        return configuration.getByte(key, null);
     }
 
     @RequestMapping(value = "/config/date/{key}", method = RequestMethod.GET)
-    public void getConfigDate(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getDate(key, null));
+    @ResponseBody
+    public Date getConfigDate(@PathVariable String key) {
+        return configuration.getDate(key, null);
     }
 
     @RequestMapping(value = "/config/double/{key}", method = RequestMethod.GET)
-    public void getConfigDouble(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getDouble(key, null));
+    @ResponseBody
+    public Double getConfigDouble(@PathVariable String key) {
+        return configuration.getDouble(key, null);
     }
 
     @RequestMapping(value = "/config/float/{key}", method = RequestMethod.GET)
-    public void getConfigFloat(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getFloat(key, null));
+    @ResponseBody
+    public Float getConfigFloat(@PathVariable String key) {
+        return configuration.getFloat(key, null);
     }
 
     @RequestMapping(value = "/config/int/{key}", method = RequestMethod.GET)
-    public void getConfigInt(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getInteger(key, null));
+    @ResponseBody
+    public Integer getConfigInt(@PathVariable String key) {
+        return configuration.getInteger(key, null);
     }
 
     @RequestMapping(value = "/config/list/{key}", method = RequestMethod.GET)
-    public void getConfigList(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getList(key, null));
+    @ResponseBody
+    public List<?> getConfigList(@PathVariable String key) {
+        return configuration.getList(key, null);
     }
 
     @RequestMapping(value = "/config/long/{key}", method = RequestMethod.GET)
-    public void getConfigLong(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getLong(key, null));
+    @ResponseBody
+    public Long getConfigLong(@PathVariable String key) {
+        return configuration.getLong(key, null);
     }
 
     @RequestMapping(value = "/config/map/{key}", method = RequestMethod.GET)
-    public void getConfigMap(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getMap(key, null));
+    @ResponseBody
+    public Map<?, ?> getConfigMap(@PathVariable String key) {
+        return configuration.getMap(key, null);
     }
 
     @RequestMapping(value = "/config/string/{key}", method = RequestMethod.GET)
-    public void getConfigString(@PathVariable String key, HttpServletResponse response) {
-        response(response, configuration.getString(key, null));
-    }
-
-    @RequestMapping(value = "/config", method = RequestMethod.GET)
-    public void getConfigurations(HttpServletResponse response) {
-        response(response, configuration.configs);
+    @ResponseBody
+    public String getConfigString(@PathVariable String key) {
+        return configuration.getString(key, null);
     }
 
     @RequestMapping(value = "/config/boolean/{key}", method = RequestMethod.POST)
-    public void setConfigBoolean(@PathVariable String key, @RequestParam boolean value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigBoolean(@PathVariable String key, @RequestParam boolean value) {
+        return configuration.set(key, value);
     }
 
     @RequestMapping(value = "/config/byte/{key}", method = RequestMethod.POST)
-    public void setConfigByte(@PathVariable String key, @RequestParam byte value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigByte(@PathVariable String key, @RequestParam byte value) {
+        return configuration.set(key, value);
     }
 
     @RequestMapping(value = "/config/date/{key}", method = RequestMethod.POST)
-    public void setConfigDate(@PathVariable String key, @RequestParam long value, HttpServletResponse response) {
+    @ResponseBody
+    public boolean setConfigDate(@PathVariable String key, @RequestParam long value) {
         Date date = new Date(value);
-        configuration.set(key, date);
-        response(response, null);
+        return configuration.set(key, date);
     }
 
     @RequestMapping(value = "/config/double/{key}", method = RequestMethod.POST)
-    public void setConfigDouble(@PathVariable String key, @RequestParam double value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigDouble(@PathVariable String key, @RequestParam double value) {
+        return configuration.set(key, value);
     }
 
     @RequestMapping(value = "/config/float/{key}", method = RequestMethod.POST)
-    public void setConfigFloat(@PathVariable String key, @RequestParam float value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigFloat(@PathVariable String key, @RequestParam float value) {
+        return configuration.set(key, value);
     }
 
     @RequestMapping(value = "/config/int/{key}", method = RequestMethod.POST)
-    public void setConfigInt(@PathVariable String key, @RequestParam int value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigInt(@PathVariable String key, @RequestParam int value) {
+        return configuration.set(key, value);
     }
 
     @RequestMapping(value = "/config/list/{key}", method = RequestMethod.POST)
-    public void setConfigList(@PathVariable String key, @RequestParam List<Object> value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigList(@PathVariable String key, @RequestParam List<Object> value) {
+        return configuration.set(key, value);
     }
 
     @RequestMapping(value = "/config/long/{key}", method = RequestMethod.POST)
-    public void setConfigLong(@PathVariable String key, @RequestParam long value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigLong(@PathVariable String key, @RequestParam long value) {
+        return configuration.set(key, value);
     }
 
     @RequestMapping(value = "/config/map/{key}", method = RequestMethod.POST)
-    public void setConfigMap(@PathVariable String key, HttpServletRequest request, HttpServletResponse response) {
+    @ResponseBody
+    public boolean setConfigMap(@PathVariable String key, HttpServletRequest request) {
         @SuppressWarnings("unchecked")
         Set<Entry<String, Object[]>> entries = request.getParameterMap().entrySet();
         Map<String, Object> map = new HashMap<String, Object>();
@@ -142,13 +148,12 @@ public class ConfigController extends BaseController {
             }
         }
 
-        configuration.set(key, map);
-        response(response, null);
+        return configuration.set(key, map);
     }
 
     @RequestMapping(value = "/config/string/{key}", method = RequestMethod.POST)
-    public void setConfigString(@PathVariable String key, @RequestParam String value, HttpServletResponse response) {
-        configuration.set(key, value);
-        response(response, null);
+    @ResponseBody
+    public boolean setConfigString(@PathVariable String key, @RequestParam String value) {
+        return configuration.set(key, value);
     }
 }

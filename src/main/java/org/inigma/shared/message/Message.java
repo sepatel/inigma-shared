@@ -1,6 +1,8 @@
 package org.inigma.shared.message;
 
-public class Message {
+import org.inigma.shared.webapp.RestResponse;
+
+public class Message implements RestResponse {
     private String code;
     private String locale;
     private String value;

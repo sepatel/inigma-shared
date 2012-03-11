@@ -38,7 +38,7 @@ public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
     @Cacheable(cacheName = "message")
     public Message findById(String code, String locale) {
         DBObject id = createId(code, locale);
-        return convert(getCollection(true).findOne(id));
+        return convert(getCollection(true).findOne(new BasicDBObject("_id", id)));
     }
 
     public void save(Message message) {

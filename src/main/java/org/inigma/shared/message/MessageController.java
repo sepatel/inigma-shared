@@ -1,14 +1,16 @@
 package org.inigma.shared.message;
 
+import java.util.Collection;
 import java.util.Locale;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.inigma.shared.webapp.BaseController;
+import org.inigma.shared.webapp.RestResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -18,44 +20,41 @@ public class MessageController extends BaseController {
     private MessageDaoTemplate template;
 
     @RequestMapping(value = "/message", method = RequestMethod.DELETE)
-    public void deleteMessage(@ModelAttribute Message message, HttpServletResponse response) {
-        if (!validateMessage(message)) {
-            response(response, null);
-            return;
-        }
-        Message deleted = template.delete(message.getCode(), message.getLocale());
-        response(response, deleted);
+    public RestResponse deleteMessage(Message message, HttpServletResponse response) {
+        validateMessage(message);
+        return template.delete(message.getCode(), message.getLocale());
     }
 
     @RequestMapping(value = "/message", method = RequestMethod.GET)
-    public void getMessage(@ModelAttribute Message message, HttpServletResponse response) {
-        if (!validateMessage(message)) {
-            response(response, null);
-            return;
-        }
-        Message found = template.findById(message.getCode(), message.getLocale());
-        response(response, found);
+    public RestResponse getMessage(Message message, HttpServletResponse response) {
+        validateMessage(message);
+        return template.findById(message.getCode(), message.getLocale());
     }
 
     @RequestMapping(value = "/messages", method = RequestMethod.GET)
-    public void getMessages(HttpServletResponse response) {
-        response(response, template.find());
+    public Collection<? extends RestResponse> getMessages(HttpServletResponse response) {
+        return template.find();
     }
 
     @RequestMapping(value = "/message", method = { RequestMethod.POST, RequestMethod.PUT })
-    public void updateMessage(@ModelAttribute Message message, HttpServletResponse response) {
-        ValidationUtils.rejectIfEmptyOrWhitespace(getErrors(), "value", "required");
-        if (!validateMessage(message)) {
-            response(response, null);
-            return;
-        }
+    public RestResponse updateMessage(Message message, HttpServletResponse response) {
+        Errors errors = getErrors(message, "message");
+        ValidationUtils.rejectIfEmptyOrWhitespace(errors, "value", "required");
+        validateMessage(message, errors);
         template.save(message);
-        response(response, message);
+        return message;
     }
 
-    private boolean validateMessage(Message message) {
-        ValidationUtils.rejectIfEmptyOrWhitespace(getErrors(), "code", "required");
-        ValidationUtils.rejectIfEmptyOrWhitespace(getErrors(), "locale", "required");
+    private void validateMessage(Message message) {
+        validateMessage(message, null);
+    }
+
+    private void validateMessage(Message message, Errors errors) {
+        if (errors == null) {
+            errors = getErrors(message, "message");
+        }
+        ValidationUtils.rejectIfEmptyOrWhitespace(errors, "code", "required");
+        ValidationUtils.rejectIfEmptyOrWhitespace(errors, "locale", "required");
         if (message.getLocale() != null) {
             String[] tokens = message.getLocale().split("_", 3);
             Locale locale = new Locale(tokens[0]);
@@ -72,6 +71,6 @@ public class MessageController extends BaseController {
             }
             message.setLocale(locale.toString());
         }
-        return hasNoErrors();
+        stopOnErrors(errors);
     }
 }

@@ -1,28 +1,26 @@
 package org.inigma.shared.webapp;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Base controller providing access to a common set of functionality.
@@ -30,74 +28,56 @@ import org.springframework.web.context.request.RequestContextHolder;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public abstract class BaseController {
-    protected final Log logger = LogFactory.getLog(getClass());
+    protected Logger logger = LoggerFactory.getLogger(getClass());
+
     @Autowired
     private MessageSource messageSource;
 
-    protected void error(HttpServletResponse response, String code) {
-        getErrors().reject(code);
-        response(response, null);
+    @ExceptionHandler({ BindException.class, RuntimeBindException.class })
+    @ResponseBody
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public RestResponse handleBindException(HttpServletRequest req, BindingResult errors) {
+        Locale locale = req.getLocale();
+        ValidationFailureResponse failureResponse = new ValidationFailureResponse();
+        for (ObjectError error : errors.getAllErrors()) {
+            if (error instanceof FieldError) {
+                FieldError fe = (FieldError) error;
+                String message = messageSource.getMessage(fe.getCode() + "." + fe.getField(), fe.getArguments(),
+                        fe.getDefaultMessage(), locale);
+                failureResponse.reject(((FieldError) error).getField(), error.getCode(), message);
+            } else {
+                String message = messageSource.getMessage(error.getCode(), error.getArguments(),
+                        error.getDefaultMessage(), locale);
+                failureResponse.reject(error.getCode(), message);
+            }
+        }
+        return failureResponse;
     }
 
-    protected void error(HttpServletResponse response, String code, String field) {
-        getErrors().rejectValue(field, code);
-        response(response, null);
+    @ExceptionHandler
+    @ResponseBody
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public RestResponse handleException(Exception e) {
+        return new ExceptionResponse(e);
     }
 
     protected Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
-    protected Errors getErrors() {
-        Errors errors = (Errors) RequestContextHolder.getRequestAttributes().getAttribute("errors",
-                RequestAttributes.SCOPE_REQUEST);
-        if (errors == null) {
-            throw new IllegalStateException("Errors not properly initialized in the request attributes!");
-        }
-        return errors;
+    protected Errors getErrors(Object target, String name) {
+        return new RuntimeBindException(target, name);
     }
 
-    protected boolean hasNoErrors() {
-        return !getErrors().hasErrors();
-    }
-
-    protected void response(HttpServletResponse response, Object data) {
-        // protected void response(Writer w, Object data) {
-        response.setContentType("application/json");
-        List<ObjectError> errors = getErrors().getAllErrors();
-        try {
-            JSONWriter writer = new JSONWriter(response.getWriter()).object();
-            if (hasNoErrors()) {
-                writer.key("data");
-                if (data == null) {
-                    writer.value(null);
-                } else if (data instanceof String || data instanceof Number || data instanceof Boolean || data instanceof Map<?, ?>) {
-                    writer.value(data);
-                } else if (data instanceof Collection<?> || data instanceof Array) {
-                    writer.value(new JSONArray(data));
-                } else {
-                    writer.value(new JSONObject(data));
-                }
+    protected void stopOnErrors(Errors errors) {
+        if (errors.hasErrors()) {
+            if (errors instanceof RuntimeBindException) {
+                throw (RuntimeBindException) errors;
+            } else if (errors instanceof BindingResult) {
+                throw new RuntimeBindException((BindingResult) errors);
             }
-            writer.key("success").value(hasNoErrors());
-            writer.key("errors").array();
-            for (ObjectError error : errors) {
-                writer.object();
-                writer.key("code").value(error.getCode());
-                writer.key("message").value(messageSource.getMessage(error.getCode(), error.getArguments(), error.getDefaultMessage(), null));
-                if (error instanceof FieldError) {
-                    writer.key("field").value(((FieldError) error).getField());
-                }
-                writer.endObject();
-            }
-            writer.endArray();
-            writer.endObject();
-        } catch (JSONException e) {
-            logger.error("Unable to generate response", e);
-            throw new RuntimeException("Error responding with errors", e);
-        } catch (IOException e) {
-            logger.error("Unable to generate response", e);
-            throw new RuntimeException("Error responding with errors", e);
+            // TODO, magically make a valid runtime exception that handles errors. Not sure this case will ever happen.
+            throw new IllegalStateException("Not a BindingResult Errors instance: " + errors.getClass().getName());
         }
     }
 }
