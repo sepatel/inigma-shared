@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.WriteConcern;
 
 /**
  * Dynamically loads and reloads configuration settings from a collection. The data model is presumed to be in the
@@ -43,15 +44,6 @@ public class MongoConfiguration extends AbstractConfiguration {
         reload();
     }
 
-    /**
-     * @see org.inigma.lwrest.config.Configuration#remove(java.lang.String)
-     */
-    @Override
-    public Object remove(String key) {
-        ds.getCollection(collection).remove(new BasicDBObject("_id", key));
-        return super.remove(key);
-    }
-
     public void setPollingFrequency(long pollingFrequency) {
         if (reloadTask != null) {
             reloadTask.cancel();
@@ -68,13 +60,18 @@ public class MongoConfiguration extends AbstractConfiguration {
     }
 
     @Override
-    protected Object getValue(String key) {
+    protected <T> T getValue(String key, Class<T> type) {
         DBObject query = new BasicDBObject(KEY, key);
-        DBObject dbObject = ds.getCollection(collection, true).findOne(query);
+        DBObject dbObject = ds.getCollection(collection).findOne(query);
         if (dbObject == null) {
             throw new IllegalStateException("Configuration " + key + " not found!");
         }
-        return dbObject.get(VALUE);
+        return (T) dbObject.get(VALUE);
+    }
+
+    @Override
+    protected void removeValue(String key) {
+        ds.getCollection(collection).remove(new BasicDBObject("_id", key), WriteConcern.JOURNAL_SAFE);
     }
 
     @Override
@@ -82,12 +79,12 @@ public class MongoConfiguration extends AbstractConfiguration {
         DBObject query = new BasicDBObject(KEY, key);
         DBObject data = new BasicDBObject(KEY, key);
         data.put(VALUE, value);
-        ds.getCollection(collection).update(query, data, true, false);
+        ds.getCollection(collection).update(query, data, true, false, WriteConcern.JOURNAL_SAFE);
     }
 
     private void reload() {
         Map<String, Object> newconfigs = new HashMap<String, Object>();
-        DBCursor allConfigs = ds.getCollection(collection, true).find();
+        DBCursor allConfigs = ds.getCollection(collection).find();
         for (DBObject o : allConfigs) {
             newconfigs.put((String) o.get(KEY), o.get(VALUE));
         }

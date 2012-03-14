@@ -117,15 +117,6 @@ public class ConfigurationTest {
 
     @Before
     public void setup() {
-        config = new AbstractConfiguration() {
-            @Override
-            protected Object getValue(String key) {
-                return null;
-            }
-
-            @Override
-            protected void setValue(String key, Object value) {
-            }
-        };
+        config = new InMemoryConfiguration();
     }
 }

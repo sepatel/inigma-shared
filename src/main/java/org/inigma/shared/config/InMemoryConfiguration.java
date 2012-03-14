@@ -6,7 +6,11 @@ public class InMemoryConfiguration extends AbstractConfiguration {
     }
 
     @Override
-    protected Object getValue(String key) {
+    protected void removeValue(String key) {
+    }
+
+    @Override
+    protected <T> T getValue(String key, Class<T> type) {
         return null;
     }
 }
