@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.CommandResult;
@@ -90,6 +91,11 @@ public abstract class MongoDaoTemplate<T> {
 
     public DBCollection getCollection(boolean slave) {
         return pool.getCollection(collection, slave);
+    }
+    protected WriteResult upsert(DBObject object) {
+        BasicDBObject query = new BasicDBObject("_id", object.removeField("_id"));
+        BasicDBObject update = new BasicDBObject(object.toMap());
+        return getCollection(false).update(query, new BasicDBObject("$set", update), true, false);
     }
 
     protected Collection<T> convert(final DBCursor cursor) {
@@ -211,17 +217,5 @@ public abstract class MongoDaoTemplate<T> {
 
     protected String generateId() {
         return UUID.randomUUID().toString().replaceAll("\\-", "");
-    }
-
-    protected void throwOnError(WriteResult result) {
-        CommandResult lastError = result.getCachedLastError();
-        if (lastError != null) {
-            try {
-                lastError.throwOnError();
-            } catch (MongoException e) {
-                logger.error(lastError.getErrorMessage(), lastError.getException());
-                throw e;
-            }
-        }
     }
 }

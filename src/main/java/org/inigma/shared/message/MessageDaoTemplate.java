@@ -6,8 +6,9 @@ import org.inigma.shared.mongo.DBObjectWrapper;
 import org.inigma.shared.mongo.MongoDaoTemplate;
 import org.inigma.shared.mongo.MongoDataStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
-import com.googlecode.ehcache.annotations.Cacheable;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
@@ -26,16 +27,17 @@ public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
         super(mds, collection);
     }
 
+    @CacheEvict("message")
     public Message delete(String code, String locale) {
         return convert(getCollection(false).findAndRemove(createId(code, locale)));
     }
 
-    @Cacheable(cacheName = "message.all")
+    @Cacheable("message.all")
     public Collection<Message> find() {
         return super.find();
     }
 
-    @Cacheable(cacheName = "message")
+    @Cacheable("message")
     public Message findById(String code, String locale) {
         DBObject id = createId(code, locale);
         return convert(getCollection(true).findOne(new BasicDBObject("_id", id)));
