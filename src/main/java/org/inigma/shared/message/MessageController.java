@@ -13,6 +13,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class MessageController extends BaseController {
@@ -20,23 +21,27 @@ public class MessageController extends BaseController {
     private MessageDaoTemplate template;
 
     @RequestMapping(value = "/message", method = RequestMethod.DELETE)
+    @ResponseBody
     public RestResponse deleteMessage(Message message, HttpServletResponse response) {
         validateMessage(message);
         return template.delete(message.getCode(), message.getLocale());
     }
 
     @RequestMapping(value = "/message", method = RequestMethod.GET)
+    @ResponseBody
     public RestResponse getMessage(Message message, HttpServletResponse response) {
         validateMessage(message);
         return template.findById(message.getCode(), message.getLocale());
     }
 
     @RequestMapping(value = "/messages", method = RequestMethod.GET)
+    @ResponseBody
     public Collection<? extends RestResponse> getMessages(HttpServletResponse response) {
         return template.find();
     }
 
     @RequestMapping(value = "/message", method = { RequestMethod.POST, RequestMethod.PUT })
+    @ResponseBody
     public RestResponse updateMessage(Message message, HttpServletResponse response) {
         Errors errors = getErrors(message, "message");
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "value", "required");

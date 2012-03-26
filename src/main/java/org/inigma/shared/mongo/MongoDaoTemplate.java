@@ -11,8 +11,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -26,7 +26,7 @@ import com.mongodb.WriteResult;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public abstract class MongoDaoTemplate<T> {
-    protected Log logger = LogFactory.getLog(getClass());
+    protected Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final MongoDataStore pool;
     protected final String collection;
