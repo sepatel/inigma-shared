@@ -5,13 +5,10 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.inigma.shared.mongo.MongoDataStore;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.WriteConcern;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 /**
  * Dynamically loads and reloads configuration settings from a collection. The data model is presumed to be in the
@@ -25,20 +22,19 @@ import com.mongodb.WriteConcern;
  */
 public class MongoConfiguration extends AbstractConfiguration {
     private static final String KEY = "_id";
-    private static final String VALUE = "value";
     private static final Timer TIMER = new Timer(true);
 
-    private final MongoDataStore ds;
+    private final MongoOperations mongo;
     private final String collection;
     private TimerTask reloadTask;
 
     @Autowired
-    public MongoConfiguration(MongoDataStore ds) {
+    public MongoConfiguration(MongoOperations ds) {
         this(ds, "config");
     }
 
-    public MongoConfiguration(MongoDataStore ds, String collection) {
-        this.ds = ds;
+    public MongoConfiguration(MongoOperations ds, String collection) {
+        this.mongo = ds;
         this.collection = collection;
 
         reload();
@@ -61,32 +57,28 @@ public class MongoConfiguration extends AbstractConfiguration {
 
     @Override
     protected <T> T getValue(String key, Class<T> type) {
-        DBObject query = new BasicDBObject(KEY, key);
-        DBObject dbObject = ds.getCollection(collection).findOne(query);
-        if (dbObject == null) {
+        ConfigurationEntry entry = mongo.findOne(Query.query(Criteria.where(KEY).is(key)), ConfigurationEntry.class, collection);
+        if (entry == null) {
             throw new IllegalStateException("Configuration " + key + " not found!");
         }
-        return (T) dbObject.get(VALUE);
+        return (T) entry.getValue();
     }
 
     @Override
     protected void removeValue(String key) {
-        ds.getCollection(collection).remove(new BasicDBObject("_id", key), WriteConcern.JOURNAL_SAFE);
+        mongo.remove(Query.query(Criteria.where(KEY).is(key)), collection); // TODO: Journal safe this bit
     }
 
     @Override
     protected void setValue(String key, Object value) {
-        DBObject query = new BasicDBObject(KEY, key);
-        DBObject data = new BasicDBObject(KEY, key);
-        data.put(VALUE, value);
-        ds.getCollection(collection).update(query, data, true, false, WriteConcern.JOURNAL_SAFE);
+        ConfigurationEntry entry = new ConfigurationEntry(key, value);
+        mongo.save(entry, collection); // TODO: Journal safe this bit
     }
 
     private void reload() {
         Map<String, Object> newconfigs = new HashMap<String, Object>();
-        DBCursor allConfigs = ds.getCollection(collection).find();
-        for (DBObject o : allConfigs) {
-            newconfigs.put((String) o.get(KEY), o.get(VALUE));
+        for (ConfigurationEntry entry : mongo.findAll(ConfigurationEntry.class, collection)) {
+            newconfigs.put(entry.getId(), entry.getValue());
         }
         super.reload(newconfigs);
     }

@@ -1,30 +1,53 @@
 package org.inigma.shared.message;
 
-import org.inigma.shared.webapp.RestResponse;
+import java.io.Serializable;
 
-public class Message implements RestResponse {
-    private String code;
-    private String locale;
-    private String value;
+public class Message {
+    static class MessageId implements Serializable {
+        private String code;
+        private String locale;
 
-    public String getCode() {
-        return code;
+        public String getCode() {
+            return code;
+        }
+
+        public String getLocale() {
+            return locale;
+        }
+
+        public void setCode(String code) {
+            this.code = code;
+        }
+
+        public void setLocale(String locale) {
+            this.locale = locale;
+        }
     }
 
-    public String getLocale() {
-        return locale;
+    private MessageId id;
+    private String value;
+
+    public Message() {
+        this.id = new MessageId();
+    }
+
+    public Message(MessageResponse request) {
+        this.id = new MessageId();
+        this.id.code = request.getCode();
+        this.id.locale = request.getLocale();
+        this.value = request.getValue();
+    }
+
+    public MessageId getId() {
+        return id;
     }
 
     public String getValue() {
         return value;
     }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public void setLocale(String locale) {
-        this.locale = locale;
+    public void setId(MessageId id) {
+        this.id = id;
     }
 
     public void setValue(String value) {
