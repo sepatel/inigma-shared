@@ -8,6 +8,7 @@ import org.inigma.shared.mongo.MongoDataStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.mongodb.core.query.Query;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -15,21 +16,17 @@ import com.mongodb.WriteConcern;
 
 public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
     public MessageDaoTemplate() {
-        // for cache annotations to work
+        this("message");
     }
 
-    @Autowired
-    public MessageDaoTemplate(MongoDataStore mds) {
-        super(mds, "message");
-    }
-
-    public MessageDaoTemplate(MongoDataStore mds, String collection) {
-        super(mds, collection);
+    public MessageDaoTemplate(String collection) {
+        super(collection, Message.class);
     }
 
     @CacheEvict("message")
     public Message delete(String code, String locale) {
-        return convert(getCollection(false).findAndRemove(createId(code, locale)));
+        return mongo.findAndRemove(Query.query(null), template, collection);
+//        return convert(getCollection(false).findAndRemove(createId(code, locale)));
     }
 
     @Cacheable("message.all")
@@ -48,16 +45,6 @@ public class MessageDaoTemplate extends MongoDaoTemplate<Message> {
         DBObject data = new BasicDBObject("value", message.getValue());
         DBObject dataset = new BasicDBObject("$set", data);
         getCollection(false).update(query, dataset, true, false, WriteConcern.SAFE);
-    }
-
-    @Override
-    protected Message convert(DBObjectWrapper data) {
-        Message message = new Message();
-        DBObjectWrapper document = data.getDocument("_id");
-        message.setCode(document.getString("code"));
-        message.setLocale(document.getString("locale"));
-        message.setValue(data.getString("value"));
-        return message;
     }
 
     private DBObject createId(String code, String locale) {
