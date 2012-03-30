@@ -8,7 +8,11 @@ import org.springframework.data.mongodb.core.convert.MongoConverter;
 
 public class MongoNoTypeTemplate extends MongoTemplate {
     public MongoNoTypeTemplate(MongoDbFactory mongoDbFactory) {
-        super(mongoDbFactory, null);
+        this(mongoDbFactory, null);
+    }
+
+    public MongoNoTypeTemplate(MongoDbFactory mongoDbFactory, MongoConverter mongoConverter) {
+        super(mongoDbFactory, mongoConverter);
         MongoConverter converter = getConverter();
         if (converter instanceof MappingMongoConverter) {
             ((MappingMongoConverter) converter).setTypeMapper(new DefaultMongoTypeMapper(null));
