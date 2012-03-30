@@ -58,6 +58,7 @@ public abstract class BaseController {
     @ResponseBody
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public RestResponse handleException(Exception e) {
+        logger.error("Unhandled Exception", e);
         return new ExceptionResponse(e);
     }
 
