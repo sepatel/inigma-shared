@@ -32,7 +32,7 @@ public abstract class MongoDaoTemplate<T> {
         this.template = template;
     }
 
-    public MongoDaoTemplate( Class<T> template) {
+    public MongoDaoTemplate(Class<T> template) {
         this.template = template;
     }
 
@@ -54,7 +54,12 @@ public abstract class MongoDaoTemplate<T> {
         return mongo.findAndRemove(Query.query(Criteria.where("_id").is(id)), template);
     }
 
-    protected void upsert(T object) {
+    public void save(T object) {
         mongo.save(object);
+    }
+
+    @Deprecated
+    protected void upsert(T object) {
+        save(object);
     }
 }
