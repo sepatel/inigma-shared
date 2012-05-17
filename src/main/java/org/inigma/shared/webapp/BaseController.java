@@ -64,10 +64,6 @@ public abstract class BaseController {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
-    protected Errors getErrors(Object target, String name) {
-        return new RuntimeBindException(target, name);
-    }
-
     protected void stopOnErrors(Errors errors) {
         if (errors.hasErrors()) {
             if (errors instanceof RuntimeBindException) {

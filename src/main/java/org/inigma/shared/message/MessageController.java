@@ -8,6 +8,7 @@ import org.inigma.shared.webapp.BaseController;
 import org.inigma.shared.webapp.RestResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,22 +22,22 @@ public class MessageController extends BaseController {
 
     @RequestMapping(value = "/message", method = RequestMethod.DELETE)
     @ResponseBody
-    public RestResponse deleteMessage(MessageResponse message) {
-        validateMessage(message);
+    public RestResponse deleteMessage(MessageResponse message, BindingResult errors) {
+        validateMessage(message, errors);
         return new MessageResponse(template.delete(message.getCode(), message.getLocale()));
     }
 
     @RequestMapping(value = "/message", method = RequestMethod.GET)
     @ResponseBody
-    public RestResponse getMessage(MessageResponse message) {
-        validateMessage(message);
+    public RestResponse getMessage(MessageResponse message, BindingResult errors) {
+        validateMessage(message, errors);
         return new MessageResponse(template.findById(message.getCode(), message.getLocale()));
     }
 
     @RequestMapping(value = "/messages", method = RequestMethod.GET)
     @ResponseBody
-    public Collection<? extends RestResponse> getMessages() {
-        Collection<RestResponse> responses = new ArrayList<RestResponse>();
+    public Collection<MessageResponse> getMessages() {
+        Collection<MessageResponse> responses = new ArrayList<MessageResponse>();
         for (Message msg : template.find()) {
             responses.add(new MessageResponse(msg));
         }
@@ -45,22 +46,14 @@ public class MessageController extends BaseController {
 
     @RequestMapping(value = "/message", method = { RequestMethod.POST, RequestMethod.PUT })
     @ResponseBody
-    public RestResponse updateMessage(MessageResponse message) {
-        Errors errors = getErrors(message, "message");
+    public RestResponse updateMessage(MessageResponse message, BindingResult errors) {
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "value", "required");
         validateMessage(message, errors);
         template.save(new Message(message));
         return message;
     }
 
-    private void validateMessage(MessageResponse message) {
-        validateMessage(message, null);
-    }
-
     private void validateMessage(MessageResponse message, Errors errors) {
-        if (errors == null) {
-            errors = getErrors(message, "message");
-        }
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "code", "required");
         if (message.getLocale() != null) {
             ValidationUtils.rejectIfEmptyOrWhitespace(errors, "locale", "blank");
