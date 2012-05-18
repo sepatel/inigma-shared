@@ -10,6 +10,10 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.WriteConcern;
+
 /**
  * Dynamically loads and reloads configuration settings from a collection. The data model is presumed to be in the
  * following syntax.
@@ -57,11 +61,17 @@ public class MongoConfiguration extends AbstractConfiguration {
 
     @Override
     protected <T> T getValue(String key, Class<T> type) {
+        DBObject object = mongo.getCollection(collection).findOne(new BasicDBObject(KEY, key));
+        /*
         ConfigurationEntry entry = mongo.findOne(Query.query(Criteria.where(KEY).is(key)), ConfigurationEntry.class, collection);
         if (entry == null) {
             throw new IllegalStateException("Configuration " + key + " not found!");
         }
-        return (T) entry.getValue();
+        */
+        if (object == null) {
+            return null;
+        }
+        return (T) object.get("value");
     }
 
     @Override
@@ -71,14 +81,15 @@ public class MongoConfiguration extends AbstractConfiguration {
 
     @Override
     protected void setValue(String key, Object value) {
-        ConfigurationEntry entry = new ConfigurationEntry(key, value);
-        mongo.save(entry, collection); // TODO: Journal safe this bit
+        BasicDBObject data = new BasicDBObject(KEY, key);
+        data.append("value", value);
+        mongo.getCollection(collection).update(new BasicDBObject(KEY, key), data, true, false, WriteConcern.JOURNAL_SAFE);
     }
 
     private void reload() {
         Map<String, Object> newconfigs = new HashMap<String, Object>();
-        for (ConfigurationEntry entry : mongo.findAll(ConfigurationEntry.class, collection)) {
-            newconfigs.put(entry.getId(), entry.getValue());
+        for (DBObject entry : mongo.getCollection(collection).find()) {
+            newconfigs.put((String) entry.get(KEY), entry.get("value"));
         }
         super.reload(newconfigs);
     }
