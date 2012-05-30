@@ -21,6 +21,7 @@
 
   <build>
     <defaultGoal>clean package</defaultGoal>
+    <finalName>${project.artifactId}-${scmVersion}</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -36,6 +37,23 @@
         <configuration>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.inigma.maven</groupId>
+        <artifactId>maven-scm-version-plugin</artifactId>
+        <version>0.1-SNAPSHOT</version>
+        <configuration>
+          <versionPattern>${scmVersion.branch}-SNAPSHOT</versionPattern>
+        </configuration>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>gitVersion</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
