@@ -1,10 +1,12 @@
 package org.inigma.shared.search;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
 
-import org.inigma.shared.search.SearchField.Operation;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,57 +41,74 @@ public class SearchServiceITest {
         doc.getAddress().setState("NY");
         doc.setCreated(new Date());
         mongo.save(doc);
+        
+        for (int i = 0; i < 10; i++) {
+            doc = new TestDocument();
+            doc.setAge(100 + i);
+            doc.setCreated(new Date());
+            doc.setId(UUID.randomUUID().toString());
+            doc.setName(doc.getId().substring(0, 12));
+            TestAddress address = doc.getAddress();
+            address.setState("FL");
+            address.setPostal("12345");
+            mongo.save(doc);
+        }
     }
 
     @Test
-    public void searchSingleRegex() {
-        SearchCriteria<TestDocument> search = new SearchCriteria<TestDocument>(new TestDocument(), "name", "age",
-                "address.city");
-        search.getCriteria().setName("Spider");
-        SearchField name = search.getField("name");
-        name.setOperation(Operation.REGEX);
+    public void searchSingleIs() {
+        SearchCriteria search = new SearchCriteria();
+        search.setQuery("{name: 'Spiderman'}");
 
-        SearchResponse<TestDocument> response = service.search(search);
+        SearchResponse response = service.search(search, TestDocument.class);
+        assertNotNull(response);
+        assertEquals(1, response.getResults().size());
+        
+        search.setQuery("{name: 'Slickman'}");
+        response = service.search(search, TestDocument.class);
+        assertNotNull(response);
+        assertEquals(0, response.getResults().size());
+    }
+    
+    @Test
+    public void searchSingleRegex() {
+        SearchCriteria search = new SearchCriteria();
+        search.setQuery("{name: {$regex: 'Spider', $options: ''}}");
+
+        SearchResponse response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(1, response.getResults().size());
 
-        search.getCriteria().setName("man");
-        response = service.search(search);
+        search.setQuery("{name: {$regex: 'man', $options: ''}}");
+        response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(2, response.getResults().size());
     }
     
     @Test
     public void searchTwoAttributes() {
-        SearchCriteria<TestDocument> search = new SearchCriteria<TestDocument>(new TestDocument(), "name", "age",
-                "address.city");
-        search.getCriteria().setName("Spider");
-        search.getCriteria().setAge(30);
-        SearchField name = search.getField("name");
-        name.setOperation(Operation.REGEX);
-        SearchField age = search.getField("age");
-        age.setOperation(Operation.GT);
+        SearchCriteria search = new SearchCriteria();
+        search.setQuery("{name: {'$regex': 'Spider', $options: ''}, age: {'$gt': 30}}");
         
-        SearchResponse<TestDocument> response = service.search(search);
+        SearchResponse response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(1, response.getResults().size());
+        assertEquals(42, response.getResults().get(0).get("age"));
 
-        search.getCriteria().setName("man");
-        response = service.search(search);
+        search.setQuery("{name: {'$regex': 'man', $options: ''}, age: {'$gt': 30}}");
+        response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(2, response.getResults().size());
     }
     
     @Test
     public void searchNestedAttribute() {
-        SearchCriteria<TestDocument> search = new SearchCriteria<TestDocument>(new TestDocument(), "name", "age",
-                "address.city");
-        search.getCriteria().getAddress().setCity("Atlanta");
-        SearchField city = search.getField("address.city");
-        city.setOperation(Operation.IS);
+        SearchCriteria search = new SearchCriteria();
+        search.setQuery("{address.city: 'Atlanta'}");
         
-        SearchResponse<TestDocument> response = service.search(search);
+        SearchResponse response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(1, response.getResults().size());
+        assertEquals("Atlanta", ((Map<?, ?>)response.getResults().get(0).get("address")).get("city"));
     }
 }
