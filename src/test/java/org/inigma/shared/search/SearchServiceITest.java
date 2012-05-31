@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Before;
@@ -60,7 +59,7 @@ public class SearchServiceITest {
         SearchCriteria search = new SearchCriteria();
         search.setQuery("{name: 'Spiderman'}");
 
-        SearchResponse response = service.search(search, TestDocument.class);
+        SearchResponse<TestDocument> response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(1, response.getResults().size());
         
@@ -75,7 +74,7 @@ public class SearchServiceITest {
         SearchCriteria search = new SearchCriteria();
         search.setQuery("{name: {$regex: 'Spider', $options: ''}}");
 
-        SearchResponse response = service.search(search, TestDocument.class);
+        SearchResponse<TestDocument> response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(1, response.getResults().size());
 
@@ -90,10 +89,10 @@ public class SearchServiceITest {
         SearchCriteria search = new SearchCriteria();
         search.setQuery("{name: {'$regex': 'Spider', $options: ''}, age: {'$gt': 30}}");
         
-        SearchResponse response = service.search(search, TestDocument.class);
+        SearchResponse<TestDocument> response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(1, response.getResults().size());
-        assertEquals(42, response.getResults().get(0).get("age"));
+        assertEquals(42, response.getResults().get(0).getAge());
 
         search.setQuery("{name: {'$regex': 'man', $options: ''}, age: {'$gt': 30}}");
         response = service.search(search, TestDocument.class);
@@ -106,9 +105,9 @@ public class SearchServiceITest {
         SearchCriteria search = new SearchCriteria();
         search.setQuery("{address.city: 'Atlanta'}");
         
-        SearchResponse response = service.search(search, TestDocument.class);
+        SearchResponse<TestDocument> response = service.search(search, TestDocument.class);
         assertNotNull(response);
         assertEquals(1, response.getResults().size());
-        assertEquals("Atlanta", ((Map<?, ?>)response.getResults().get(0).get("address")).get("city"));
+        assertEquals("Atlanta", response.getResults().get(0).getAddress().getCity());
     }
 }
