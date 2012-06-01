@@ -22,26 +22,6 @@ public class SearchService {
     @Autowired
     private MongoOperations mongo;
 
-    public Criteria convertDbObject(DBObject dbo) {
-        Criteria criteria = new Criteria();
-        for (String key : dbo.keySet()) {
-            Object value = dbo.get(key);
-            if (value instanceof DBObject) {
-                DBObject sub = (DBObject) value;
-                if (sub.get("$regex") != null) {
-                    criteria.and(key).regex((String) sub.get("$regex"), (String) sub.get("$options"));
-                } else if (sub.get("$gt") != null) {
-                    criteria.and(key).gt(sub.get("$gt"));
-                } else {
-                    criteria.and(key).andOperator(convertDbObject(sub));
-                }
-            } else {
-                criteria.and(key).is(value);
-            }
-        }
-        return criteria;
-    }
-
     public <T> SearchResponse<T> search(SearchCriteria criteria, Class<T> clazz) {
         DBObject query = new BasicDBObject();
         DBObject fields = new BasicDBObject();
@@ -56,7 +36,10 @@ public class SearchService {
             sort = (DBObject) JSON.parse(criteria.getSort());
         }
 
-        Criteria c = convertDbObject(query);
+        Criteria c = new Criteria();
+        for (String key : query.keySet()) {
+            c.and(key).is(query.get(key));
+        }
         Query q = Query.query(c);
         Field f = q.fields();
         for (String key : fields.keySet()) {
@@ -82,6 +65,7 @@ public class SearchService {
         q.limit(criteria.getRows());
 
         SearchResponse<T> response = new SearchResponse<T>(criteria);
+        response.setCount(mongo.count(q, clazz));
         response.setResults(mongo.find(q, clazz));
         return response;
     }
