@@ -1,15 +1,25 @@
 package org.inigma.shared.search;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mapping.Association;
+import org.springframework.data.mapping.AssociationHandler;
+import org.springframework.data.mapping.PropertyHandler;
+import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Field;
+import org.springframework.data.mongodb.core.mapping.MongoPersistentEntity;
+import org.springframework.data.mongodb.core.mapping.MongoPersistentProperty;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Order;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Sort;
+import org.springframework.data.util.TypeInformation;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -22,37 +32,81 @@ public class SearchService {
     @Autowired
     private MongoOperations mongo;
 
+    private static class ScanningPropertyHandler implements PropertyHandler<MongoPersistentProperty>,
+            AssociationHandler<MongoPersistentProperty> {
+        private MappingContext<? extends MongoPersistentEntity<?>, MongoPersistentProperty> mappingContext;
+        private String prefix;
+        private Collection<String> storage;
+
+        public ScanningPropertyHandler(MappingContext<? extends MongoPersistentEntity<?>, MongoPersistentProperty> map,
+                Collection<String> storage) {
+            this.mappingContext = map;
+            this.storage = storage;
+            this.prefix = "\"";
+        }
+
+        private ScanningPropertyHandler(
+                MappingContext<? extends MongoPersistentEntity<?>, MongoPersistentProperty> map, String propertyPrefix,
+                Collection<String> storage) {
+            this.mappingContext = map;
+            this.storage = storage;
+            this.prefix = propertyPrefix;
+        }
+
+        @Override
+        public void doWithAssociation(Association<MongoPersistentProperty> association) {
+            MongoPersistentProperty inverse = association.getInverse();
+            if (inverse != null) {
+                MongoPersistentEntity<?> entity = mappingContext.getPersistentEntity(inverse.getType());
+                ScanningPropertyHandler propertyHandler = new ScanningPropertyHandler(mappingContext, prefix + inverse.getFieldName() + ".", storage);
+                entity.doWithProperties(propertyHandler);
+                entity.doWithAssociations(propertyHandler);
+            }
+        }
+
+        @Override
+        public void doWithPersistentProperty(MongoPersistentProperty persistentProperty) {
+            boolean nested = false;
+            String fieldName = persistentProperty.getFieldName();
+            Iterable<? extends TypeInformation<?>> entityType = persistentProperty.getPersistentEntityType();
+            for (TypeInformation<?> info : entityType) {
+                MongoPersistentEntity<?> entity = mappingContext.getPersistentEntity(info.getType());
+                ScanningPropertyHandler propertyHandler = new ScanningPropertyHandler(this.mappingContext, this.prefix
+                        + fieldName + ".", storage);
+                entity.doWithProperties(propertyHandler);
+                entity.doWithAssociations(propertyHandler);
+                nested = true;
+            }
+            if (!nested) {
+                storage.add(prefix + fieldName + "\": 1");
+            }
+        }
+    }
+
+    public SearchCriteria createCriteria(Class<?> clazz) {
+        List<String> fields = new ArrayList<String>();
+        SearchCriteria criteria = new SearchCriteria();
+        final MappingContext<? extends MongoPersistentEntity<?>, MongoPersistentProperty> mappingContext = mongo
+                .getConverter().getMappingContext();
+
+        MongoPersistentEntity<?> entity = mappingContext.getPersistentEntity(clazz);
+        ScanningPropertyHandler propertyHandler = new ScanningPropertyHandler(mappingContext, fields);
+        entity.doWithProperties(propertyHandler);
+        entity.doWithAssociations(propertyHandler);
+        criteria.setFields("{" + StringUtils.collectionToCommaDelimitedString(fields) + "}");
+
+        return criteria;
+    }
+
     public <T> SearchResponse<T> search(SearchCriteria criteria, Class<T> clazz) {
-        DBObject query = new BasicDBObject();
-        DBObject fields = new BasicDBObject();
         DBObject sort = new BasicDBObject();
-        if (criteria.getQuery() != null) {
-            query = (DBObject) JSON.parse(criteria.getQuery());
-        }
-        if (criteria.getFields() != null) {
-            fields = (DBObject) JSON.parse(criteria.getFields());
-        }
         if (criteria.getSort() != null) {
             sort = (DBObject) JSON.parse(criteria.getSort());
         }
 
-        Criteria c = new Criteria();
-        for (String key : query.keySet()) {
-            c.and(key).is(query.get(key));
-        }
-        Query q = Query.query(c);
-        Field f = q.fields();
-        for (String key : fields.keySet()) {
-            if (fields.get(key).equals(1)) {
-                f.include(key);
-            } else if (fields.get(key).equals(0)) {
-                f.exclude(key);
-            } else {
-                logger.error("Not sure what field {} is exactly but think it is {}", fields.get(key), fields.get(key)
-                        .getClass());
-            }
-        }
-        Sort s = q.sort();
+        BasicQuery query = new BasicQuery(criteria.getQuery(), criteria.getFields());
+
+        Sort s = query.sort();
         for (String key : sort.keySet()) {
             Integer direction = (Integer) sort.get(key);
             if (direction < 0) {
@@ -61,12 +115,12 @@ public class SearchService {
                 s.on(key, Order.ASCENDING);
             }
         }
-        q.skip(criteria.getPage() * criteria.getRows());
-        q.limit(criteria.getRows());
+        query.skip(criteria.getPage() * criteria.getRows());
+        query.limit(criteria.getRows());
 
         SearchResponse<T> response = new SearchResponse<T>(criteria);
-        response.setCount(mongo.count(q, clazz));
-        response.setResults(mongo.find(q, clazz));
+        response.setCount(mongo.count(query, clazz));
+        response.setResults(mongo.find(query, clazz));
         return response;
     }
 
