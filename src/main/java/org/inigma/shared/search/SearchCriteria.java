@@ -1,7 +1,7 @@
 package org.inigma.shared.search;
 
 public class SearchCriteria {
-    private int rows = 100;
+    private int rows = 10;
     private int page = 0;
     private String query = "{}";
     private String fields = "{}";
