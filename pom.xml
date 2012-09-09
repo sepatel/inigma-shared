@@ -15,13 +15,12 @@
   </scm>
 
   <properties>
-    <spring.version>3.1.0.RELEASE</spring.version>
+    <spring.version>3.1.2.RELEASE</spring.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <build>
     <defaultGoal>clean package</defaultGoal>
-    <finalName>${project.artifactId}-${scmVersion}</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -38,52 +37,7 @@
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.inigma.maven</groupId>
-        <artifactId>maven-scm-version-plugin</artifactId>
-        <version>0.1-SNAPSHOT</version>
-        <configuration>
-          <versionPattern>${scmVersion.branch}-SNAPSHOT</versionPattern>
-        </configuration>
-        <executions>
-          <execution>
-            <id>validate</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>gitVersion</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.inigma.maven</groupId>
-                    <artifactId>maven-scm-version-plugin</artifactId>
-                    <versionRange>[0.1-SNAPSHOT,)</versionRange>
-                    <goals>
-                      <goal>gitVersion</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore></ignore>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <dependencies>
@@ -112,18 +66,23 @@
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.9</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.data</groupId>
       <artifactId>spring-data-mongodb</artifactId>
-      <version>1.0.1.RELEASE</version>
+      <version>1.0.4.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
       <artifactId>mongo-java-driver</artifactId>
-      <version>2.7.2</version>
+      <version>2.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jolbox</groupId>
+      <artifactId>bonecp</artifactId>
+      <version>0.8.0-alpha1</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -140,12 +99,12 @@
     <dependency>
       <groupId>net.sf.ehcache</groupId>
       <artifactId>ehcache-core</artifactId>
-      <version>2.5.1</version>
+      <version>2.6.0</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.6.4</version>
+      <version>1.7.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

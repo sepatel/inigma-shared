@@ -208,6 +208,11 @@ public class RuntimeBindException extends RuntimeException implements BindingRes
     }
 
     @Override
+    public String[] resolveMessageCodes(String errorCode) {
+        return ref.resolveMessageCodes(errorCode);
+    }
+
+    @Override
     public String[] resolveMessageCodes(String errorCode, String field) {
         return ref.resolveMessageCodes(errorCode, field);
     }
