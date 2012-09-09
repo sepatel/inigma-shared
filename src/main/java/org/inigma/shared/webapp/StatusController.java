@@ -19,7 +19,7 @@ import com.mongodb.Mongo;
 import com.mongodb.ReplicaSetStatus;
 
 @Controller
-public class StatusController extends BaseController {
+public class StatusController extends AjaxController {
     @Autowired
     private MongoTemplate mongo;
 

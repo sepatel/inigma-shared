@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * 
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
-public abstract class BaseController {
+public abstract class AjaxController {
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired

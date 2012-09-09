@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
-import org.inigma.shared.webapp.BaseController;
+import org.inigma.shared.webapp.AjaxController;
 import org.inigma.shared.webapp.RestResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-public class MessageController extends BaseController {
+public class MessageController extends AjaxController {
     @Autowired
     private MessageDaoTemplate template;
 
