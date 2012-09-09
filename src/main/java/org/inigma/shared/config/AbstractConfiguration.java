@@ -21,6 +21,11 @@ public abstract class AbstractConfiguration implements Configuration {
     }
 
     @Override
+    public Object get(String key) {
+        return get(key, Object.class);
+    }
+
+    @Override
     public Boolean getBoolean(String key) {
         return get(key, Boolean.class);
     }
@@ -207,7 +212,7 @@ public abstract class AbstractConfiguration implements Configuration {
     }
 
     @SuppressWarnings("unchecked")
-    protected <T> T get(String key, Class<T> type) {
+    public <T> T get(String key, Class<T> type) {
         if (!configs.containsKey(key)) { // load configuration into the cache if missing
             T value = getValue(key, type);
             if (value == null) {

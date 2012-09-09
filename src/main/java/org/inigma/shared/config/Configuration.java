@@ -6,57 +6,61 @@ import java.util.Map;
 import java.util.Set;
 
 public interface Configuration {
-	boolean addObserver(ConfigurationObserver listener);
+    boolean addObserver(ConfigurationObserver listener);
 
-	Boolean getBoolean(String key);
+    Object get(String key);
+    
+    <T> T get(String key, Class<T> clazz);
 
-	Boolean getBoolean(String key, Boolean defaultValue);
+    Boolean getBoolean(String key);
 
-	Byte getByte(String key);
+    Boolean getBoolean(String key, Boolean defaultValue);
 
-	Byte getByte(String key, Number defaultValue);
+    Byte getByte(String key);
 
-	Date getDate(String key);
+    Byte getByte(String key, Number defaultValue);
 
-	Date getDate(String key, Date defaultValue);
+    Date getDate(String key);
 
-	Double getDouble(String key);
+    Date getDate(String key, Date defaultValue);
 
-	Double getDouble(String key, Number defaultValue);
+    Double getDouble(String key);
 
-	Float getFloat(String key);
+    Double getDouble(String key, Number defaultValue);
 
-	Float getFloat(String key, Number defaultValue);
+    Float getFloat(String key);
 
-	Integer getInteger(String key);
+    Float getFloat(String key, Number defaultValue);
 
-	Integer getInteger(String key, Number defaultValue);
+    Integer getInteger(String key);
 
-	Set<String> getKeys();
+    Integer getInteger(String key, Number defaultValue);
 
-	<T> List<T> getList(String key);
+    Set<String> getKeys();
 
-	<T> List<T> getList(String key, List<T> defaultValue);
+    <T> List<T> getList(String key);
 
-	Long getLong(String key);
+    <T> List<T> getList(String key, List<T> defaultValue);
 
-	Long getLong(String key, Number defaultValue);
+    Long getLong(String key);
 
-	<T> Map<String, T> getMap(String key);
+    Long getLong(String key, Number defaultValue);
 
-	<T> Map<String, T> getMap(String key, Map<String, T> defaultValue);
+    <T> Map<String, T> getMap(String key);
 
-	Short getShort(String key);
+    <T> Map<String, T> getMap(String key, Map<String, T> defaultValue);
 
-	Short getShort(String key, Number defaultValue);
+    Short getShort(String key);
 
-	String getString(String key);
+    Short getShort(String key, Number defaultValue);
 
-	String getString(String key, String defaultValue);
+    String getString(String key);
 
-	Object remove(String key);
+    String getString(String key, String defaultValue);
 
-	boolean removeObserver(ConfigurationObserver listener);
+    Object remove(String key);
 
-	boolean set(String key, Object value);
+    boolean removeObserver(ConfigurationObserver listener);
+
+    boolean set(String key, Object value);
 }
