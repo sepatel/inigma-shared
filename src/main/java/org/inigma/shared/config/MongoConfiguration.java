@@ -1,6 +1,9 @@
 package org.inigma.shared.config;
 
+import java.sql.Date;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -9,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.util.ClassUtils;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
@@ -62,14 +67,16 @@ public class MongoConfiguration extends AbstractConfiguration {
     @Override
     protected <T> T getValue(String key, Class<T> type) {
         DBObject object = mongo.getCollection(collection).findOne(new BasicDBObject(KEY, key));
-        /*
-        ConfigurationEntry entry = mongo.findOne(Query.query(Criteria.where(KEY).is(key)), ConfigurationEntry.class, collection);
-        if (entry == null) {
-            throw new IllegalStateException("Configuration " + key + " not found!");
-        }
-        */
         if (object == null) {
             return null;
+        }
+        if (object.containsField("_class")) {
+            try {
+                Class<?> clazz = Class.forName((String) object.get("_class"));
+                return (T) mongo.getConverter().read(clazz, object);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Class " + object.get("_class") + " not found in classpath", e);
+            }
         }
         return (T) object.get("value");
     }
@@ -82,8 +89,21 @@ public class MongoConfiguration extends AbstractConfiguration {
     @Override
     protected void setValue(String key, Object value) {
         BasicDBObject data = new BasicDBObject(KEY, key);
-        data.append("value", value);
-        mongo.getCollection(collection).update(new BasicDBObject(KEY, key), data, true, false, WriteConcern.JOURNAL_SAFE);
+        if (value == null || ClassUtils.isPrimitiveOrWrapper(value.getClass()) || value.getClass() == String.class
+                || Date.class.isAssignableFrom(value.getClass()) || Calendar.class.isAssignableFrom(value.getClass())) {
+            data.append("value", value);
+        } else if (List.class.isAssignableFrom(value.getClass())) {
+            BasicDBList sink = new BasicDBList();
+            mongo.getConverter().write(value, sink);
+            data.append("value", sink);
+        } else { // complex object type
+            BasicDBObject sink = new BasicDBObject();
+            mongo.getConverter().write(value, sink);
+            data.append("value", sink);
+        }
+
+        mongo.getCollection(collection).update(new BasicDBObject(KEY, key), data, true, false,
+                WriteConcern.JOURNAL_SAFE);
     }
 
     private void reload() {

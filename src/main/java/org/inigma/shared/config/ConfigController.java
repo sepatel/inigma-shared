@@ -3,7 +3,6 @@ package org.inigma.shared.config;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.inigma.shared.webapp.AjaxController;
@@ -33,6 +32,7 @@ public class ConfigController extends AjaxController {
         return configuration.get(key, convertToClass(type));
     }
 
+    /*
     @RequestMapping(value = "/config", method = RequestMethod.POST)
     @ResponseBody
     public Object setConfig(@RequestBody Map<String, Object> value) {
@@ -41,12 +41,12 @@ public class ConfigController extends AjaxController {
         }
         return value;
     }
+    */
 
     @RequestMapping(value = "/config/{key}/{type}", method = RequestMethod.POST)
     @ResponseBody
     public Object setConfig(@PathVariable String key, @PathVariable String type, @RequestBody String jsonValue)
             throws Exception {
-        // TODO: Convert the request body into the desired object value type
         Object value = jsonValue;
         Class<?> clazz = convertToClass(type);
         if (ClassUtils.isPrimitiveOrWrapper(clazz)) {
@@ -67,6 +67,16 @@ public class ConfigController extends AjaxController {
             } else {
                 logger.warn("Missing definition for class {} with value {}", clazz, jsonValue);
             }
+        } else if ("date".equalsIgnoreCase(type)) {
+            value = new Date(Long.parseLong(jsonValue));
+        } else if ("list".equalsIgnoreCase(type)) {
+            ObjectMapper om = new ObjectMapper();
+            value = om.readValue(jsonValue, List.class);
+        } else if ("map".equalsIgnoreCase(type)) {
+            ObjectMapper om = new ObjectMapper();
+            value = om.readValue(jsonValue, Map.class);
+        } else if ("string".equalsIgnoreCase(type)) {
+            value = jsonValue;
         } else {
             ObjectMapper om = new ObjectMapper();
             value = om.readValue(jsonValue, clazz);
@@ -75,7 +85,9 @@ public class ConfigController extends AjaxController {
     }
 
     private Class<?> convertToClass(String type) {
-        if ("date".equalsIgnoreCase(type)) {
+        if ("string".equalsIgnoreCase(type)) {
+            return String.class;
+        } else if ("date".equalsIgnoreCase(type)) {
             return Date.class;
         } else if ("list".equalsIgnoreCase(type)) {
             return List.class;

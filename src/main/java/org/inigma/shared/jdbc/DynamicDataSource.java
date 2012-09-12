@@ -2,10 +2,10 @@ package org.inigma.shared.jdbc;
 
 import java.io.PrintWriter;
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.SQLException;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
 
 import org.inigma.shared.config.Configuration;
@@ -13,17 +13,16 @@ import org.inigma.shared.config.ConfigurationObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.SimpleDriverDataSource;
+
+import com.jolbox.bonecp.BoneCPConfig;
+import com.jolbox.bonecp.BoneCPDataSource;
 
 public class DynamicDataSource implements DataSource, ConfigurationObserver {
     private Logger logger = LoggerFactory.getLogger(getClass());
-    private DataSource ds;
+    private BoneCPDataSource ds;
     @Autowired
     private Configuration config;
-    private String driverKey;
-    private String urlKey;
-    private String usernameKey;
-    private String passwordKey;
+    private String configKey;
 
     @Override
     public Connection getConnection() throws SQLException {
@@ -52,8 +51,7 @@ public class DynamicDataSource implements DataSource, ConfigurationObserver {
 
     @Override
     public void onConfigurationUpdate(String key, Object original, Object current) {
-        if ("db_url".equals(key) || "db_user".equals(key) || "db_pass".equals(key) || "db_driver".equals(key)) {
-            // TODO: Reconfigure the datasource and close out the existing one.
+        if (configKey.equals(key)) {
         }
     }
 
@@ -61,8 +59,8 @@ public class DynamicDataSource implements DataSource, ConfigurationObserver {
         this.config = config;
     }
 
-    public void setDriverKey(String driverKey) {
-        this.driverKey = driverKey;
+    public void setConfigKey(String configKey) {
+        this.configKey = configKey;
     }
 
     @Override
@@ -75,40 +73,45 @@ public class DynamicDataSource implements DataSource, ConfigurationObserver {
         ds.setLogWriter(out);
     }
 
-    public void setPasswordKey(String passwordKey) {
-        this.passwordKey = passwordKey;
-    }
-
-    public void setUrlKey(String urlKey) {
-        this.urlKey = urlKey;
-    }
-
-    public void setUsernameKey(String usernameKey) {
-        this.usernameKey = usernameKey;
-    }
-
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        return ds.unwrap(iface);
+        throw new UnsupportedOperationException("Not yet investigated!");
+    }
+
+    @PreDestroy
+    public void close() {
+        ds.close();
     }
 
     @PostConstruct
     @SuppressWarnings("unused")
     private void initialize() {
-        String driver = config.getString(driverKey, null);
-        String url = config.getString(urlKey, null);
-        String user = config.getString(usernameKey, null);
-        String pass = config.getString(passwordKey, null);
+        BoneCPDataSource oldds = ds;
+        DataSourceConfig dsc = config.get(configKey, DataSourceConfig.class);
 
-        logger.info("Initializing datasource using url '{}' and user '{}'", url, user);
-        if (url != null) {
+        if (dsc != null) {
+            logger.info("Initializing datasource using url '{}' and user '{}'", dsc.getUrl(), dsc.getUsername());
             try {
-                ds = new SimpleDriverDataSource((Driver) Class.forName(driver).newInstance(), url, user, pass);
+                Class.forName(dsc.getDriver()); // makes sure it is in the classpath
+                BoneCPConfig bcp = new BoneCPConfig();
+                bcp.setJdbcUrl(dsc.getUrl());
+                bcp.setUsername(dsc.getUsername());
+                bcp.setPassword(dsc.getPassword());
+                bcp.setMinConnectionsPerPartition(dsc.getMinSize());
+                bcp.setMaxConnectionsPerPartition(dsc.getMaxSize());
+                if (dsc.getTestQuery() != null) {
+                    bcp.setConnectionTestStatement(dsc.getTestQuery());
+                }
+                ds = new BoneCPDataSource(bcp);
+                if (oldds != null) {
+                    oldds.close();
+                }
             } catch (Exception e) {
                 logger.error("Auto-generated error log, Cannot initialize data source", e);
             }
         } else {
             logger.warn("Unable to initialize datasource. Configurations likely incorrect!");
         }
+        config.addObserver(this);
     }
 }

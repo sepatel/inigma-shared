@@ -24,12 +24,31 @@ public class ConfigurationTest {
             originals.put(key, original);
         }
     }
+    
+    public static class TestObject {
+        public boolean active = true;
+        public String name = "John Smith";
+        public Date date = new Date();
+        public int count = 42;
+    }
 
     private AbstractConfiguration config;
 
     @Test(expected = IllegalStateException.class)
     public void keyNotFound() {
         config.getString("noSuchKey");
+    }
+    
+    @Test
+    public void complexObject() {
+        TestObject to = new TestObject();
+        to.active = false;
+        to.name = "Purple Monkey";
+        assertTrue(config.set("test", to));
+        TestObject value = config.get("test", TestObject.class);
+        assertEquals(to.active, value.active);
+        assertEquals(to.name, value.name);
+        assertEquals(to.date, value.date);
     }
 
     @Test
