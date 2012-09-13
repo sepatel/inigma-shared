@@ -224,7 +224,7 @@ public abstract class AbstractConfiguration implements Configuration {
     }
 
     @SuppressWarnings("unchecked")
-    protected <T> T get(String key, T defaultValue, Class<T> type) {
+    public <T> T get(String key, T defaultValue, Class<T> type) {
         if (!configs.containsKey(key)) { // load configuration into the cache if missing
             Object value = getValue(key, type);
             if (value == null) {

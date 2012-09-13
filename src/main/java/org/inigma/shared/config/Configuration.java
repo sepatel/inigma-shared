@@ -12,6 +12,8 @@ public interface Configuration {
     
     <T> T get(String key, Class<T> clazz);
 
+    <T> T get(String key, T defaultValue, Class<T> clazz);
+
     Boolean getBoolean(String key);
 
     Boolean getBoolean(String key, Boolean defaultValue);
