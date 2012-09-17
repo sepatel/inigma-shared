@@ -1,6 +1,6 @@
 package org.inigma.shared.webapp;
 
-class ExceptionResponse implements RestResponse {
+class ExceptionResponse {
     private Exception exception;
     
     public ExceptionResponse(Exception e) {

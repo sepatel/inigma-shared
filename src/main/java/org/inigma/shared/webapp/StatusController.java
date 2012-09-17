@@ -25,7 +25,7 @@ public class StatusController extends AjaxController {
 
     @RequestMapping(value = "/monitor", method = RequestMethod.GET)
     @ResponseBody
-    public RestResponse status(HttpServletResponse response) {
+    public Object status(HttpServletResponse response) {
         Set<String> collections = mongo.getDb().getCollectionNames();
         if (collections.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
@@ -49,6 +49,6 @@ public class StatusController extends AjaxController {
             usedDbs.add(db.getName());
         }
         map.put("usedDatabases", usedDbs);
-        return new MapRestResponse<String, Object>(map);
+        return map;
     }
 }

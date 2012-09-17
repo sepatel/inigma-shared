@@ -1,11 +1,9 @@
 package org.inigma.shared.message;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
 import org.inigma.shared.webapp.AjaxController;
-import org.inigma.shared.webapp.RestResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -15,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+/**
+ * <pre>db.message.ensureIndex({code: 1, locale: 1}, {unique: true})</pre>
+ * @author <a href="sejal@inigma.org">Sejal Patel</a>
+ */
 @Controller
 public class MessageController extends AjaxController {
     @Autowired
@@ -22,38 +24,34 @@ public class MessageController extends AjaxController {
 
     @RequestMapping(value = "/message", method = RequestMethod.DELETE)
     @ResponseBody
-    public RestResponse deleteMessage(MessageResponse message, BindingResult errors) {
+    public Message deleteMessage(Message message, BindingResult errors) {
         validateMessage(message, errors);
-        return new MessageResponse(template.delete(message.getCode(), message.getLocale()));
+        return template.delete(message.getCode(), message.getLocale());
     }
 
     @RequestMapping(value = "/message", method = RequestMethod.GET)
     @ResponseBody
-    public RestResponse getMessage(MessageResponse message, BindingResult errors) {
+    public Message getMessage(Message message, BindingResult errors) {
         validateMessage(message, errors);
-        return new MessageResponse(template.findById(message.getCode(), message.getLocale()));
+        return template.findById(message.getCode(), message.getLocale());
     }
 
     @RequestMapping(value = "/messages", method = RequestMethod.GET)
     @ResponseBody
-    public Collection<MessageResponse> getMessages() {
-        Collection<MessageResponse> responses = new ArrayList<MessageResponse>();
-        for (Message msg : template.find()) {
-            responses.add(new MessageResponse(msg));
-        }
-        return responses;
+    public Collection<Message> getMessages() {
+        return template.find();
     }
 
     @RequestMapping(value = "/message", method = { RequestMethod.POST, RequestMethod.PUT })
     @ResponseBody
-    public RestResponse updateMessage(MessageResponse message, BindingResult errors) {
+    public Message updateMessage(Message message, BindingResult errors) {
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "value", "required");
         validateMessage(message, errors);
-        template.save(new Message(message));
+        template.save(message);
         return message;
     }
 
-    private void validateMessage(MessageResponse message, Errors errors) {
+    private void validateMessage(Message message, Errors errors) {
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "code", "required");
         if (message.getLocale() != null) {
             ValidationUtils.rejectIfEmptyOrWhitespace(errors, "locale", "blank");

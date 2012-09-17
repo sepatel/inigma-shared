@@ -34,7 +34,7 @@ public abstract class AjaxController {
     @ExceptionHandler({ BindException.class, RuntimeBindException.class })
     @ResponseBody
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public RestResponse handleBindException(HttpServletRequest req, BindingResult errors) {
+    public ValidationFailureResponse handleBindException(HttpServletRequest req, BindingResult errors) {
         Locale locale = req.getLocale();
         ValidationFailureResponse failureResponse = new ValidationFailureResponse();
         for (ObjectError error : errors.getAllErrors()) {
@@ -55,7 +55,7 @@ public abstract class AjaxController {
     @ExceptionHandler
     @ResponseBody
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public RestResponse handleException(Exception e) {
+    public ExceptionResponse handleException(Exception e) {
         logger.error("Unhandled Exception", e);
         return new ExceptionResponse(e);
     }

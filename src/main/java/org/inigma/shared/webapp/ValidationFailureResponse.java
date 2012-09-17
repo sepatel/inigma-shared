@@ -3,7 +3,7 @@ package org.inigma.shared.webapp;
 import java.util.ArrayList;
 import java.util.Collection;
 
-class ValidationFailureResponse implements RestResponse {
+class ValidationFailureResponse {
     private static class FieldErrorResponse extends ObjectErrorResponse {
         private String field;
 
@@ -38,7 +38,7 @@ class ValidationFailureResponse implements RestResponse {
     private Collection<ObjectErrorResponse> errors;
 
     public ValidationFailureResponse() {
-        this.errors = new ArrayList<ValidationFailureResponse.ObjectErrorResponse>();
+        this.errors = new ArrayList<ObjectErrorResponse>();
     }
 
     public Collection<ObjectErrorResponse> getErrors() {

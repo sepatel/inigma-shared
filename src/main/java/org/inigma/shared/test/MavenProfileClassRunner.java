@@ -10,12 +10,11 @@ import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.annotation.ProfileValueSource;
 import org.springframework.test.annotation.ProfileValueUtils;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-public class SpringProfileClassRunner extends SpringJUnit4ClassRunner {
-    public SpringProfileClassRunner(Class<?> clazz) throws InitializationError {
+public class MavenProfileClassRunner extends SpringJUnit4ClassRunner {
+    public MavenProfileClassRunner(Class<?> clazz) throws InitializationError {
         super(clazz);
     }
 
@@ -42,7 +41,7 @@ public class SpringProfileClassRunner extends SpringJUnit4ClassRunner {
         Class<?> testClass = getTestClass().getJavaClass();
         IfProfileValue ifProfileValue = testClass.getAnnotation(IfProfileValue.class);
         if (ifProfileValue == null) {
-            System.err.println("Not executing profile because IfProfileValue is null");
+            // no overriding conditionals so execute the test
             return true;
         }
 
@@ -54,15 +53,13 @@ public class SpringProfileClassRunner extends SpringJUnit4ClassRunner {
             }
             annotatedValues = new String[] { ifProfileValue.value() };
         }
-
         ProfileValueSource pvs = ProfileValueUtils.retrieveProfileValueSource(testClass);
         String value = pvs.get(ifProfileValue.name());
         if (value.contains(",")) {
             for (String key : value.split(" *, *")) {
                 for (String annotated : annotatedValues) {
                     if (ObjectUtils.nullSafeEquals(annotated, key)) {
-                        System.err.printf("Executing profile triggered by '%s' and profile '%s'\n",
-                                annotated, key);
+                        System.err.printf("Executing profile triggered by '%s' and profile '%s'\n", annotated, key);
                         return true;
                     }
                 }
@@ -75,8 +72,7 @@ public class SpringProfileClassRunner extends SpringJUnit4ClassRunner {
                 return true;
             }
         }
-        System.err.printf("No profile triggered from keys: %s in annotations %s\n", value,
-                CollectionUtils.arrayToList(annotatedValues));
+
         return false;
     }
 }
