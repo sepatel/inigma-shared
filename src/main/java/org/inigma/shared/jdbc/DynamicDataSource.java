@@ -52,6 +52,7 @@ public class DynamicDataSource implements DataSource, ConfigurationObserver {
     @Override
     public void onConfigurationUpdate(String key, Object original, Object current) {
         if (configKey.equals(key)) {
+            initialize();
         }
     }
 
@@ -84,10 +85,9 @@ public class DynamicDataSource implements DataSource, ConfigurationObserver {
     }
 
     @PostConstruct
-    @SuppressWarnings("unused")
     private void initialize() {
         BoneCPDataSource oldds = ds;
-        DataSourceConfig dsc = config.get(configKey, DataSourceConfig.class);
+        DataSourceConfig dsc = config.get(configKey, null, DataSourceConfig.class);
 
         if (dsc != null) {
             logger.info("Initializing datasource using url '{}' and user '{}'", dsc.getUrl(), dsc.getUsername());
