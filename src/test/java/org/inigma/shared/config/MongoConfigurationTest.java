@@ -79,6 +79,14 @@ public class MongoConfigurationTest {
     public void readString() {
         assertEquals("my string text", config.getString("test_string"));
     }
+    
+    @Test
+    public void readObjectFromInitializedReadings() {
+        config = new MongoConfiguration(mongo, "testConfig");
+        readObject(); // rerun some tests.
+        readMap();
+        readList();
+    }
 
     @Before
     public void setup() {
@@ -92,8 +100,9 @@ public class MongoConfigurationTest {
         collection.insert(new BasicDBObject("_id", "test_float").append("value", 42.0f));
         collection.insert(new BasicDBObject("_id", "test_double").append("value", 42.0));
         BasicDBObject obj = new BasicDBObject("name", "Sejal").append("age", 42).append("alive", true);
-        collection.insert(new BasicDBObject("_id", "test_object").append("value", obj));
         collection.insert(new BasicDBObject("_id", "test_map").append("value", obj));
+        obj.append("_class", TestObject.class.getName());
+        collection.insert(new BasicDBObject("_id", "test_object").append("value", obj));
         BasicDBList list = new BasicDBList();
         list.add("Apple");
         list.add("Sauce");

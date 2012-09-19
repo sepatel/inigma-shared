@@ -70,18 +70,9 @@ public class MongoConfiguration extends AbstractConfiguration {
         if (object == null) {
             return null;
         }
-        Object value = object.get("value");
-        if (type == null || type.isAssignableFrom(value.getClass())) { // matches requested type
-            // TODO: Check to see if Date, List, Map, and Object work correctly in this way
-            return (T) value;
-        }
-        if (List.class.isAssignableFrom(type) || Map.class.isAssignableFrom(type)) {
-            // TODO: Is this piece needed?
-        }
-
-        return mongo.getConverter().read(type, (DBObject) value);
+        return convertValueToResult(object.get("value"), type);
     }
-
+    
     @Override
     protected void removeValue(String key) {
         mongo.remove(Query.query(Criteria.where(KEY).is(key)), collection); // TODO: Journal safe this bit
@@ -107,10 +98,26 @@ public class MongoConfiguration extends AbstractConfiguration {
                 WriteConcern.JOURNAL_SAFE);
     }
 
+    private <T> T convertValueToResult(Object value, Class<T> type) {
+        if (value instanceof DBObject && ((DBObject) value).containsField("_class")) { // strongly typed data
+            DBObject classData = (DBObject) value;
+            try {
+                Class<?> forName = Class.forName((String) classData.get("_class"));
+                return (T) mongo.getConverter().read(forName, classData);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Class " + classData.get("_class") + " not found in classpath!");
+            }
+        } else if (type == null || type.isAssignableFrom(value.getClass())) { // matches requested type
+            return (T) value;
+        }
+
+        return mongo.getConverter().read(type, (DBObject) value);
+    }
+
     private void reload() {
         Map<String, Object> newconfigs = new HashMap<String, Object>();
         for (DBObject entry : mongo.getCollection(collection).find()) {
-            newconfigs.put((String) entry.get(KEY), entry.get("value"));
+            newconfigs.put((String) entry.get(KEY), convertValueToResult(entry.get("value"), null));
         }
         super.reload(newconfigs);
     }
