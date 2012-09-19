@@ -22,7 +22,32 @@ public abstract class AbstractConfiguration implements Configuration {
 
     @Override
     public Object get(String key) {
-        return get(key, Object.class);
+        return get(key, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T get(String key, Class<T> type) {
+        if (!configs.containsKey(key)) { // load configuration into the cache if missing
+            T value = getValue(key, type);
+            if (value == null) {
+                throw new IllegalStateException("Configuration " + key + " not found!");
+            }
+            configs.put(key, value);
+        }
+        return (T) configs.get(key);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T get(String key, T defaultValue, Class<T> type) {
+        if (!configs.containsKey(key)) { // load configuration into the cache if missing
+            Object value = getValue(key, type);
+            if (value == null) {
+                return defaultValue;
+            }
+            configs.put(key, value);
+        }
+        return (T) configs.get(key);
     }
 
     @Override
@@ -209,30 +234,6 @@ public abstract class AbstractConfiguration implements Configuration {
         configs.put(key, value);
         changed(key, ovalue, value);
         return true;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T get(String key, Class<T> type) {
-        if (!configs.containsKey(key)) { // load configuration into the cache if missing
-            T value = getValue(key, type);
-            if (value == null) {
-                throw new IllegalStateException("Configuration " + key + " not found!");
-            }
-            configs.put(key, value);
-        }
-        return (T) configs.get(key);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T get(String key, T defaultValue, Class<T> type) {
-        if (!configs.containsKey(key)) { // load configuration into the cache if missing
-            Object value = getValue(key, type);
-            if (value == null) {
-                return defaultValue;
-            }
-            configs.put(key, value);
-        }
-        return (T) configs.get(key);
     }
 
     protected abstract <T> T getValue(String key, Class<T> type);

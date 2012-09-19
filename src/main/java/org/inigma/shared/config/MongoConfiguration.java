@@ -70,15 +70,16 @@ public class MongoConfiguration extends AbstractConfiguration {
         if (object == null) {
             return null;
         }
-        if (object.containsField("_class")) {
-            try {
-                Class<?> clazz = Class.forName((String) object.get("_class"));
-                return (T) mongo.getConverter().read(clazz, object);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException("Class " + object.get("_class") + " not found in classpath", e);
-            }
+        Object value = object.get("value");
+        if (type == null || type.isAssignableFrom(value.getClass())) { // matches requested type
+            // TODO: Check to see if Date, List, Map, and Object work correctly in this way
+            return (T) value;
         }
-        return (T) object.get("value");
+        if (List.class.isAssignableFrom(type) || Map.class.isAssignableFrom(type)) {
+            // TODO: Is this piece needed?
+        }
+
+        return mongo.getConverter().read(type, (DBObject) value);
     }
 
     @Override
