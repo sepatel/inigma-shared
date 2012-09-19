@@ -87,6 +87,16 @@ public class MongoConfigurationTest {
         readMap();
         readList();
     }
+    
+    @Test
+    public void writeThenReadDate() {
+        Date now = new Date();
+        config.set("test_current_date", now);
+        config = new MongoConfiguration(mongo, "testConfig");
+        Date date = config.getDate("test_current_date");
+        assertNotNull(date);
+        assertEquals(now.getTime(), date.getTime());
+    }
 
     @Before
     public void setup() {

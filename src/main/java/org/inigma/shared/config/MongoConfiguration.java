@@ -1,7 +1,6 @@
 package org.inigma.shared.config;
 
-import java.sql.Date;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +71,7 @@ public class MongoConfiguration extends AbstractConfiguration {
         }
         return convertValueToResult(object.get("value"), type);
     }
-    
+
     @Override
     protected void removeValue(String key) {
         mongo.remove(Query.query(Criteria.where(KEY).is(key)), collection); // TODO: Journal safe this bit
@@ -81,10 +80,10 @@ public class MongoConfiguration extends AbstractConfiguration {
     @Override
     protected void setValue(String key, Object value) {
         BasicDBObject data = new BasicDBObject(KEY, key);
-        if (value == null || ClassUtils.isPrimitiveOrWrapper(value.getClass()) || value.getClass() == String.class
-                || Date.class.isAssignableFrom(value.getClass()) || Calendar.class.isAssignableFrom(value.getClass())) {
+        if (value == null || ClassUtils.isPrimitiveOrWrapper(value.getClass())
+                || ClassUtils.isAssignableValue(String.class, value) || ClassUtils.isAssignableValue(Date.class, value)) {
             data.append("value", value);
-        } else if (List.class.isAssignableFrom(value.getClass())) {
+        } else if (ClassUtils.isAssignableValue(List.class, value)) {
             BasicDBList sink = new BasicDBList();
             mongo.getConverter().write(value, sink);
             data.append("value", sink);
@@ -99,15 +98,20 @@ public class MongoConfiguration extends AbstractConfiguration {
     }
 
     private <T> T convertValueToResult(Object value, Class<T> type) {
-        if (value instanceof DBObject && ((DBObject) value).containsField("_class")) { // strongly typed data
+        if (value == null) {
+            return null;
+        } else if ((type != null && ClassUtils.isAssignableValue(type, value))
+                || ClassUtils.isPrimitiveOrWrapper(value.getClass())
+                || ClassUtils.isAssignableValue(String.class, value) || ClassUtils.isAssignableValue(Date.class, value)) {
+            return (T) value;
+        } else if (value instanceof DBObject && ((DBObject) value).containsField("_class")) { // strongly typed data
             DBObject classData = (DBObject) value;
             try {
-                Class<?> forName = Class.forName((String) classData.get("_class"));
-                return (T) mongo.getConverter().read(forName, classData);
+                type = (Class<T>) Class.forName((String) classData.get("_class"));
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException("Class " + classData.get("_class") + " not found in classpath!");
             }
-        } else if (type == null || type.isAssignableFrom(value.getClass())) { // matches requested type
+        } else if (type == null) { // this is intentionally after the _class check
             return (T) value;
         }
 
