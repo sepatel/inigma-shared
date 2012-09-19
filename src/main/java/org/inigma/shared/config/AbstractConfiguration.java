@@ -266,12 +266,13 @@ public abstract class AbstractConfiguration implements Configuration {
         }
     }
 
+    @SuppressWarnings("static-method")
     private boolean valuesAreEqual(Object a, Object b) {
         if (a == b) { // both are null or same memory reference
             return true;
         } else if (a == null && b != null || a != null && b == null) {
             return false;
         }
-        return a.equals(b);
+        return a.equals(b); // impossible to be null here
     }
 }

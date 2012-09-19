@@ -9,6 +9,18 @@ public class DataSourceConfig {
     private int maxSize;
     private String testQuery;
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof DataSourceConfig) {
+            DataSourceConfig dsc = (DataSourceConfig) obj;
+            return equal(driver, dsc.driver) && equal(url, dsc.url) && equal(username, dsc.username)
+                    && equal(password, dsc.password) && equal(minSize, dsc.minSize) && equal(maxSize, dsc.maxSize)
+                    && equal(testQuery, dsc.testQuery);
+        }
+        return false;
+    }
+
+    
     public String getDriver() {
         return driver;
     }
@@ -37,6 +49,14 @@ public class DataSourceConfig {
         return username;
     }
 
+    @Override
+    public int hashCode() {
+        if (url == null) {
+            return 0;
+        }
+        return url.hashCode();
+    }
+
     public void setDriver(String driver) {
         this.driver = driver;
     }
@@ -63,5 +83,15 @@ public class DataSourceConfig {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    @SuppressWarnings("static-method")
+    private boolean equal(Object source, Object other) {
+        if (source == null && other == null) {
+            return true;
+        } else if (source != null) {
+            return source.equals(other);
+        }
+        return false;
     }
 }
