@@ -9,7 +9,7 @@
 
   <groupId>org.inigma.shared</groupId>
   <artifactId>inigma-shared</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <name>Shared Development Libraries</name>
   <packaging>jar</packaging>
 
