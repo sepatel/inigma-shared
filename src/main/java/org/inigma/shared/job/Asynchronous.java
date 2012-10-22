@@ -6,6 +6,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.annotation.PreDestroy;
 
@@ -20,12 +22,14 @@ public class Asynchronous {
     private BlockingDeque<FutureTask<?>> workQueue = new LinkedBlockingDeque<FutureTask<?>>();
     private ThreadPoolTaskExecutor executor;
     private long monitorInterval = 10000;
+    private String label;
 
     public Asynchronous() {
         this(5);
     }
 
     public Asynchronous(int workers) {
+        this.label = "WorkPool";
         executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(workers + 1);
         executor.setDaemon(true);
@@ -37,19 +41,32 @@ public class Asynchronous {
         executor.shutdown();
     }
 
+    public String getLabel() {
+        return label;
+    }
+
     public void initialize() {
+        executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                logger.warn("{}'s runnable {} was rejected", label, r);
+            }
+        });
         executor.initialize();
         for (int i = 1; i < executor.getCorePoolSize(); i++) {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
+                    FutureTask<?> task = null;
                     while (true) {
                         try {
-                            workQueue.take().run();
+                            task = workQueue.take();
+                            task.run();
+                            task.get(); // this is to force exception captured to be thrown. maybe better way???
                         } catch (InterruptedException e) {
-                            // ignore
+                            logger.warn("Work queue was interrupted with queue size at {}", workQueue.size());
                         } catch (Throwable e) {
-                            e.printStackTrace();
+                            logger.error("Unhandled Exception in Work Queue on item {}", task, e);
                         }
                     }
                 }
@@ -82,8 +99,12 @@ public class Asynchronous {
     public void monitor() {
         int size = workQueue.size();
         if (size > 0) {
-            logger.info("Work Queue {}", size);
+            logger.info("{} Work Queue {}", label, size);
         }
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
     }
 
     public void setMonitorInterval(long monitorInterval) {
