@@ -64,9 +64,9 @@ public class Asynchronous {
                             task.run();
                             task.get(); // this is to force exception captured to be thrown. maybe better way???
                         } catch (InterruptedException e) {
-                            logger.warn("Work queue was interrupted with queue size at {}", workQueue.size());
+                            logger.warn("{} was interrupted with queue size at {}", label, workQueue.size());
                         } catch (Throwable e) {
-                            logger.error("Unhandled Exception in Work Queue on item {}", task, e);
+                            logger.error("Unhandled Exception in {} on item {}", label, task, e);
                         }
                     }
                 }
