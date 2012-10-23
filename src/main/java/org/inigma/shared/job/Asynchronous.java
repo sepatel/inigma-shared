@@ -124,7 +124,7 @@ public class Asynchronous {
                     boolean valid = true;
                     for (int i = 0; i < args.length; i++) {
                         Class<?> paramType = ClassUtils.resolvePrimitiveIfNecessary(types[i]);
-                        if (!(args[i].getClass().isAssignableFrom(paramType))) {
+                        if (args[i] != null && !(paramType.isAssignableFrom(args[i].getClass()))) {
                             valid = false;
                         }
                     }
