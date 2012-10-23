@@ -86,14 +86,23 @@ public class Asynchronous {
         });
     }
 
-    public <T> Future<T> invoke(final Object instance, final String method, final Object... args) {
-        FutureTask<T> task = createTask(instance, method, args);
+    public <T> Future<T> invoke(final Object instance, final Method method, final Object... args) {
+        FutureTask<T> task = new FutureTask<T>(new Callable<T>() {
+            @Override
+            public T call() throws Exception {
+                return (T) method.invoke(instance, args);
+            }
+        });
         try {
             workQueue.put(task);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         return task;
+    }
+
+    public <T> Future<T> invoke(final Object instance, final String method, final Object... args) {
+        return invoke(instance, findMethod(instance, method, args), args);
     }
 
     public void monitor() {
@@ -115,7 +124,13 @@ public class Asynchronous {
         executor.setCorePoolSize(workers + 1);
     }
 
-    protected <T> FutureTask<T> createTask(final Object instance, final String method, final Object... args) {
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    protected Method findMethod(Object instance, String method, Object... args) {
         Method actualMethod = null;
         for (Method m : instance.getClass().getMethods()) {
             if (method.equals(m.getName())) {
@@ -139,18 +154,6 @@ public class Asynchronous {
             throw new IllegalStateException("Method " + method + " not found with given arguments");
         }
 
-        final Method realMethod = actualMethod;
-        return new FutureTask<T>(new Callable<T>() {
-            @Override
-            public T call() throws Exception {
-                return (T) realMethod.invoke(instance, args);
-            }
-        });
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-        super.finalize();
+        return actualMethod;
     }
 }
