@@ -1,6 +1,9 @@
 package org.inigma.shared.job;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -90,6 +93,7 @@ public class Asynchronous {
         FutureTask<T> task = new FutureTask<T>(new Callable<T>() {
             @Override
             public T call() throws Exception {
+                method.setAccessible(true);
                 return (T) method.invoke(instance, args);
             }
         });
@@ -131,8 +135,10 @@ public class Asynchronous {
     }
 
     protected Method findMethod(Object instance, String method, Object... args) {
+        Set<Method> methods = new HashSet<Method>(Arrays.asList(instance.getClass().getMethods()));
+        methods.addAll(Arrays.asList(instance.getClass().getDeclaredMethods()));
         Method actualMethod = null;
-        for (Method m : instance.getClass().getMethods()) {
+        for (Method m : methods) {
             if (method.equals(m.getName())) {
                 Class<?>[] types = m.getParameterTypes();
                 if (args.length == types.length) {
