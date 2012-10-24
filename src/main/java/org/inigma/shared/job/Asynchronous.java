@@ -4,6 +4,8 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -11,6 +13,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PreDestroy;
 
@@ -21,20 +24,25 @@ import org.springframework.util.ClassUtils;
 
 public class Asynchronous {
     private static Logger logger = LoggerFactory.getLogger(Asynchronous.class);
+    private static Timer timer = new Timer(true);
 
-    private BlockingDeque<FutureTask<?>> workQueue = new LinkedBlockingDeque<FutureTask<?>>();
+    private BlockingDeque<FutureTask<?>> workQueue;
     private ThreadPoolTaskExecutor executor;
     private long monitorInterval = 10000;
     private String label;
+    private boolean showCompletion;
+    private AtomicInteger completed;
 
     public Asynchronous() {
         this(5);
     }
 
     public Asynchronous(int workers) {
+        this.workQueue = new LinkedBlockingDeque<FutureTask<?>>();
         this.label = "WorkPool";
+        this.completed = new AtomicInteger();
         executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(workers + 1);
+        executor.setCorePoolSize(workers);
         executor.setDaemon(true);
         initialize();
     }
@@ -49,6 +57,7 @@ public class Asynchronous {
     }
 
     public void initialize() {
+        this.completed.set(0); // reset the counter too
         executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
             @Override
             public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
@@ -56,7 +65,7 @@ public class Asynchronous {
             }
         });
         executor.initialize();
-        for (int i = 1; i < executor.getCorePoolSize(); i++) {
+        for (int i = 0; i < executor.getCorePoolSize(); i++) {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -65,6 +74,7 @@ public class Asynchronous {
                         try {
                             task = workQueue.take();
                             task.run();
+                            completed.incrementAndGet();
                             task.get(); // this is to force exception captured to be thrown. maybe better way???
                         } catch (InterruptedException e) {
                             logger.warn("{} was interrupted with queue size at {}", label, workQueue.size());
@@ -75,18 +85,19 @@ public class Asynchronous {
                 }
             });
         }
-        executor.execute(new Runnable() {
+        timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                while (true) {
-                    monitor();
-                    try {
-                        Thread.sleep(monitorInterval);
-                    } catch (InterruptedException e) {
-                    }
+                int size = workQueue.size();
+                int finished = completed.getAndSet(0);
+                if (size > 0) {
+                    logger.info("{} Work Queue Open {}, Completed {}", new Object[] { label, size, finished });
+                } else if (showCompletion && size == 0) {
+                    showCompletion = false;
+                    logger.info("{} Work Queue Completed {}", label, finished);
                 }
             }
-        });
+        }, monitorInterval, monitorInterval);
     }
 
     public <T> Future<T> invoke(final Object instance, final Method method, final Object... args) {
@@ -98,6 +109,7 @@ public class Asynchronous {
             }
         });
         try {
+            showCompletion = true;
             workQueue.put(task);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -109,11 +121,8 @@ public class Asynchronous {
         return invoke(instance, findMethod(instance, method, args), args);
     }
 
-    public void monitor() {
-        int size = workQueue.size();
-        if (size > 0) {
-            logger.info("{} Work Queue {}", label, size);
-        }
+    public boolean isEmpty() {
+        return this.workQueue.isEmpty();
     }
 
     public void setLabel(String label) {
