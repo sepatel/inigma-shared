@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -31,6 +33,7 @@ import com.mongodb.WriteConcern;
 public class MongoConfiguration extends AbstractConfiguration {
     private static final String KEY = "_id";
     private static final Timer TIMER = new Timer(true);
+    private static final Logger logger = LoggerFactory.getLogger(MongoConfiguration.class);
 
     private final MongoOperations mongo;
     private final String collection;
@@ -120,8 +123,12 @@ public class MongoConfiguration extends AbstractConfiguration {
 
     private void reload() {
         Map<String, Object> newconfigs = new HashMap<String, Object>();
-        for (DBObject entry : mongo.getCollection(collection).find()) {
-            newconfigs.put((String) entry.get(KEY), convertValueToResult(entry.get("value"), null));
+        try {
+            for (DBObject entry : mongo.getCollection(collection).find()) {
+                newconfigs.put((String) entry.get(KEY), convertValueToResult(entry.get("value"), null));
+            }
+        } catch (IllegalStateException e) {
+            logger.error("Unable to check for configuration updates!", e);
         }
         super.reload(newconfigs);
     }
