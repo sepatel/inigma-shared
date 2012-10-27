@@ -30,11 +30,10 @@ public class Asynchronous {
     private ThreadPoolTaskExecutor executor;
     private long monitorInterval = 10000;
     private String label;
-    private boolean showCompletion;
-    private AtomicInteger completed;
+    AtomicInteger completed;
 
     public Asynchronous() {
-        this(5);
+        this(3);
     }
 
     public Asynchronous(int workers) {
@@ -56,7 +55,7 @@ public class Asynchronous {
         return label;
     }
 
-    public void initialize() {
+    public TimerTask initialize() {
         this.completed.set(0); // reset the counter too
         executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
             @Override
@@ -85,19 +84,9 @@ public class Asynchronous {
                 }
             });
         }
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                int size = workQueue.size();
-                int finished = completed.getAndSet(0);
-                if (size > 0) {
-                    logger.info("{} Work Queue Open {}, Completed {}", new Object[] { label, size, finished });
-                } else if (showCompletion && size == 0) {
-                    showCompletion = false;
-                    logger.info("{} Work Queue Completed {}", label, finished);
-                }
-            }
-        }, monitorInterval, monitorInterval);
+        AsynchronousMonitor monitor = new AsynchronousMonitor(this);
+        scheduleRepeatTask(monitor, monitorInterval);
+        return monitor;
     }
 
     public <T> Future<T> invoke(final Object instance, final Method method, final Object... args) {
@@ -109,7 +98,6 @@ public class Asynchronous {
             }
         });
         try {
-            showCompletion = true;
             workQueue.put(task);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -125,6 +113,10 @@ public class Asynchronous {
         return this.workQueue.isEmpty();
     }
 
+    public void scheduleRepeatTask(TimerTask task, long interval) {
+        timer.schedule(task, interval, interval);
+    }
+
     public void setLabel(String label) {
         this.label = label;
     }
@@ -135,6 +127,10 @@ public class Asynchronous {
 
     public void setWorkers(int workers) {
         executor.setCorePoolSize(workers + 1);
+    }
+
+    public int size() {
+        return workQueue.size();
     }
 
     @Override
