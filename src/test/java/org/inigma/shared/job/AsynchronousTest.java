@@ -2,6 +2,7 @@ package org.inigma.shared.job;
 
 import static org.junit.Assert.*;
 
+import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -62,13 +63,27 @@ public class AsynchronousTest {
         assertEquals(currentValue + 42, counter);
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void invokeMethodWithVarargsParam() throws Exception {
         int currentValue = counter;
-        Future<Object> future = async.invoke(this, "incrementCounterByArgCount", new Object[] { "Apple", "Orange", "Pear" });
+        Future<Object> future = async.invoke(this, "incrementCounterByArgCount", new Object[] { "Apple", "Orange",
+                "Pear" });
         Object result = future.get();
         assertNull(result);
         assertEquals(currentValue + 3, counter);
+    }
+
+    @Test(expected = ExecutionException.class)
+    public void invokeMethodThrowingException() throws Exception {
+        int currentValue = counter;
+        Future<Object> future = async.invoke(this, "exceptionThrowingMethod", 42, "My String", new Date());
+        Object result = future.get();
+        fail("Should not have reached this point with " + result);
+    }
+
+    private void exceptionThrowingMethod(int number, String text, Date time) {
+        throw new IllegalStateException("It works!");
     }
 
     public void incrementCounterByArgCount(Object... args) {

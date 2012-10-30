@@ -7,9 +7,8 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -26,7 +25,7 @@ public class Asynchronous {
     private static Logger logger = LoggerFactory.getLogger(Asynchronous.class);
     private static Timer timer = new Timer(true);
 
-    private BlockingDeque<FutureTask<?>> workQueue;
+    private BlockingDeque<AsynchronousFutureTask<?>> workQueue;
     private ThreadPoolTaskExecutor executor;
     private long monitorInterval = 10000;
     private String label;
@@ -37,7 +36,7 @@ public class Asynchronous {
     }
 
     public Asynchronous(int workers) {
-        this.workQueue = new LinkedBlockingDeque<FutureTask<?>>();
+        this.workQueue = new LinkedBlockingDeque<AsynchronousFutureTask<?>>();
         this.label = "WorkPool";
         this.completed = new AtomicInteger();
         executor = new ThreadPoolTaskExecutor();
@@ -68,7 +67,7 @@ public class Asynchronous {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    FutureTask<?> task = null;
+                    AsynchronousFutureTask<?> task = null;
                     while (true) {
                         try {
                             task = workQueue.take();
@@ -77,8 +76,9 @@ public class Asynchronous {
                             task.get(); // this is to force exception captured to be thrown. maybe better way???
                         } catch (InterruptedException e) {
                             logger.warn("{} was interrupted with queue size at {}", label, workQueue.size());
-                        } catch (Throwable e) {
-                            logger.error("Unhandled Exception in {} on item {}", label, task, e);
+                        } catch (ExecutionException e) {
+                            logger.error("Unhandled Exception in {} with {} using {}",
+                                    new Object[] { label, task.getMethod(), task.getArguments() }, e);
                         }
                     }
                 }
@@ -90,13 +90,7 @@ public class Asynchronous {
     }
 
     public <T> Future<T> invoke(final Object instance, final Method method, final Object... args) {
-        FutureTask<T> task = new FutureTask<T>(new Callable<T>() {
-            @Override
-            public T call() throws Exception {
-                method.setAccessible(true);
-                return (T) method.invoke(instance, args);
-            }
-        });
+        AsynchronousFutureTask<T> task = new AsynchronousFutureTask<T>(instance, method, args);
         try {
             workQueue.put(task);
         } catch (InterruptedException e) {
