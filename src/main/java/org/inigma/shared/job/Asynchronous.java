@@ -78,7 +78,7 @@ public class Asynchronous {
                             logger.warn("{} was interrupted with queue size at {}", label, workQueue.size());
                         } catch (ExecutionException e) {
                             logger.error("Unhandled Exception in {} with {} using {}",
-                                    new Object[] { label, task.getMethod(), task.getArguments() }, e);
+                                    new Object[] { label, task.getMethod(), task.getArguments(), e });
                         }
                     }
                 }
