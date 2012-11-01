@@ -8,8 +8,10 @@ import java.util.Set;
 public interface Configuration {
     boolean addObserver(ConfigurationObserver listener);
 
+    boolean contains(String key);
+
     Object get(String key);
-    
+
     <T> T get(String key, Class<T> clazz);
 
     <T> T get(String key, T defaultValue, Class<T> clazz);

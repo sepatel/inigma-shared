@@ -21,6 +21,15 @@ public abstract class AbstractConfiguration implements Configuration {
     }
 
     @Override
+    public boolean contains(String key) {
+        if (!configs.containsKey(key)) {
+            Object value = getValue(key, null);
+            return (value != null);
+        }
+        return true;
+    }
+
+    @Override
     public Object get(String key) {
         return get(key, null);
     }
@@ -30,24 +39,20 @@ public abstract class AbstractConfiguration implements Configuration {
         if (!configs.containsKey(key)) { // load configuration into the cache if missing
             T value = getValue(key, type);
             if (value == null) {
-                throw new IllegalStateException("Configuration " + key + " not found!");
+                return null;
             }
             configs.put(key, value);
         }
         return (T) configs.get(key);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> T get(String key, T defaultValue, Class<T> type) {
-        if (!configs.containsKey(key)) { // load configuration into the cache if missing
-            Object value = getValue(key, type);
-            if (value == null) {
-                return defaultValue;
-            }
-            configs.put(key, value);
+        T value = get(key, type);
+        if (value == null) {
+            return defaultValue;
         }
-        return (T) configs.get(key);
+        return value;
     }
 
     @Override

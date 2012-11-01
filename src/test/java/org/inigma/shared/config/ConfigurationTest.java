@@ -16,6 +16,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class ConfigurationTest {
+    public static class TestObject {
+        public boolean active = true;
+        public String name = "John Smith";
+        public Date date = new Date();
+        public int count = 42;
+    }
+    
     private static class TestListener implements ConfigurationObserver {
         public Map<String, Object> originals = new HashMap<String, Object>();
 
@@ -24,21 +31,9 @@ public class ConfigurationTest {
             originals.put(key, original);
         }
     }
-    
-    public static class TestObject {
-        public boolean active = true;
-        public String name = "John Smith";
-        public Date date = new Date();
-        public int count = 42;
-    }
 
     private AbstractConfiguration config;
 
-    @Test(expected = IllegalStateException.class)
-    public void keyNotFound() {
-        config.getString("noSuchKey");
-    }
-    
     @Test
     public void complexObject() {
         TestObject to = new TestObject();
@@ -49,6 +44,14 @@ public class ConfigurationTest {
         assertEquals(to.active, value.active);
         assertEquals(to.name, value.name);
         assertEquals(to.date, value.date);
+    }
+    
+    @Test
+    public void keyNotFound() {
+        assertFalse(config.contains("noSuchKey"));
+        assertNull(config.getString("noSuchKey"));
+        config.set("test", "fiddle");
+        assertTrue(config.contains("test"));
     }
 
     @Test
