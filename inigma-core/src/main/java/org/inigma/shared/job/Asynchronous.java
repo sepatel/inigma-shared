@@ -10,8 +10,6 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PreDestroy;
@@ -27,10 +25,7 @@ public class Asynchronous {
 
     private BlockingDeque<AsynchronousFutureTask<?>> workQueue;
     private ThreadPoolTaskExecutor executor;
-    private long monitorInterval = 10000;
-    private String label;
     AtomicInteger completed;
-    private TimerTask internalMonitor;
 
     public Asynchronous() {
         this(3);
@@ -38,7 +33,6 @@ public class Asynchronous {
 
     public Asynchronous(int workers) {
         this.workQueue = new LinkedBlockingDeque<AsynchronousFutureTask<?>>();
-        this.label = "WorkPool";
         this.completed = new AtomicInteger();
         executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(workers);
@@ -50,17 +44,9 @@ public class Asynchronous {
     public void close() {
         executor.shutdown();
     }
-    
+
     public int getCompleted() {
         return completed.get();
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public TimerTask getMonitor() {
-        return internalMonitor;
     }
 
     public <T> Future<T> invoke(final Object instance, final Method method, final Object... args) {
@@ -83,14 +69,6 @@ public class Asynchronous {
 
     public void scheduleRepeatTask(TimerTask task, long interval) {
         timer.schedule(task, interval, interval);
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public void setMonitorInterval(long monitorInterval) {
-        this.monitorInterval = monitorInterval;
     }
 
     public int size() {
@@ -134,14 +112,6 @@ public class Asynchronous {
 
     private void initialize() {
         this.completed.set(0); // reset the counter too
-        executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                logger.warn("{}'s runnable {} was rejected", label, r);
-            }
-        });
-        internalMonitor = new AsynchronousMonitor(this);
-        scheduleRepeatTask(internalMonitor, monitorInterval);
         executor.initialize();
         for (int i = 0; i < executor.getCorePoolSize(); i++) {
             executor.execute(new Runnable() {
@@ -155,10 +125,9 @@ public class Asynchronous {
                             completed.incrementAndGet();
                             task.get(); // this is to force exception captured to be thrown. maybe better way???
                         } catch (InterruptedException e) {
-                            logger.warn("{} was interrupted with queue size at {}", label, workQueue.size());
+                            logger.warn("Asynchronous was interrupted with queue size at {}", workQueue.size());
                         } catch (ExecutionException e) {
-                            logger.error("Unhandled Exception in {} with {} using {}",
-                                    new Object[] { label, task.getMethod(), task.getArguments(), e });
+                            logger.error("Unhandled Exception in {} with {}", task.getMethod(), task.getArguments(), e);
                         }
                     }
                 }
