@@ -65,7 +65,7 @@ public class DynamicDataSourceIT {
     public void getConnectionAfterDamagedNetwork() throws Exception {
         getConnection();
         server.stop();
-        Thread.sleep(100); // give a little time for the ds to properly be broken :)
+        Thread.sleep(3000); // give a little time for the ds to properly be broken :)
         server.start();
         try {
             getConnection();

@@ -22,7 +22,7 @@ import com.mongodb.DBCollection;
 @RunWith(CategoryClassRunner.class)
 @ContextConfiguration(locations = { "/datastore.xml" })
 @TestCategory("testMongo")
-public class MongoConfigurationTest {
+public class MongoConfigurationIT {
     private static class TestObject {
         public String name;
         public int age;
