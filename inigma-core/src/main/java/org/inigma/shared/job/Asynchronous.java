@@ -2,7 +2,9 @@ package org.inigma.shared.job;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -21,11 +23,13 @@ import org.springframework.util.ClassUtils;
 
 public class Asynchronous {
     private static Logger logger = LoggerFactory.getLogger(Asynchronous.class);
+
     private static Timer timer = new Timer(true);
 
-    private BlockingDeque<AsynchronousFutureTask<?>> workQueue;
-    private ThreadPoolTaskExecutor executor;
     AtomicInteger completed;
+    Map<Method, ExecutionInfo> info = new HashMap<Method, ExecutionInfo>();
+    private ThreadPoolTaskExecutor executor;
+    private BlockingDeque<AsynchronousFutureTask<?>> workQueue;
 
     public Asynchronous() {
         this(3);
@@ -50,6 +54,9 @@ public class Asynchronous {
     }
 
     public <T> Future<T> invoke(final Object instance, final Method method, final Object... args) {
+        if (!info.containsKey(method)) {
+            info.put(method, new ExecutionInfo());
+        }
         AsynchronousFutureTask<T> task = new AsynchronousFutureTask<T>(instance, method, args);
         try {
             workQueue.put(task);
@@ -119,6 +126,7 @@ public class Asynchronous {
                 public void run() {
                     AsynchronousFutureTask<?> task = null;
                     while (true) {
+                        long startTime = System.currentTimeMillis();
                         try {
                             task = workQueue.take();
                             task.run();
@@ -129,6 +137,11 @@ public class Asynchronous {
                         } catch (ExecutionException e) {
                             logger.error("Unhandled Exception in {} with {}", task.getMethod(), task.getArguments(), e);
                         }
+
+                        long duration = System.currentTimeMillis() - startTime;
+                        ExecutionInfo executionInfo = info.get(task.getMethod());
+                        executionInfo.incrementCount();
+                        executionInfo.addDuration(duration);
                     }
                 }
             });
