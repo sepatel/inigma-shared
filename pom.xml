@@ -105,6 +105,7 @@
     <module>inigma-mongo</module>
     <module>inigma-jdbc</module>
     <module>inigma-web</module>
+    <module>inigma-tracking</module>
   </modules>
 </project>
 
