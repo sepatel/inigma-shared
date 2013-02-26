@@ -129,6 +129,8 @@ public class MongoConfiguration extends AbstractConfiguration {
             }
         } catch (IllegalStateException e) {
             logger.error("Unable to check for configuration updates!", e);
+        } catch (RuntimeException e) {
+            logger.error("Unable to update configurations due to unexpected error!", e);
         }
         super.reload(newconfigs);
     }
