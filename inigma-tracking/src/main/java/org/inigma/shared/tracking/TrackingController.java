@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
+@RequestMapping("/inigma")
 public class TrackingController extends AjaxController {
     @RequestMapping(value = "/trackingNumber/{trackingNumber}", method = RequestMethod.GET)
     @ResponseBody

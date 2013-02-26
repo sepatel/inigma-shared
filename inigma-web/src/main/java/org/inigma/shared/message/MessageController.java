@@ -5,6 +5,7 @@ import java.util.Locale;
 
 import org.inigma.shared.webapp.AjaxController;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * <pre>db.message.ensureIndex({code: 1, locale: 1}, {unique: true})</pre>
  * @author <a href="sejal@inigma.org">Sejal Patel</a>
  */
+@Controller
+@RequestMapping("/inigma")
 public class MessageController extends AjaxController {
     @Autowired
     private MessageDaoTemplate template;
