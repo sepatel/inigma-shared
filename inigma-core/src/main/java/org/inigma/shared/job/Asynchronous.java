@@ -1,5 +1,12 @@
 package org.inigma.shared.job;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.ClassUtils;
+
+import javax.annotation.PreDestroy;
+import java.beans.ExceptionListener;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -14,22 +21,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PreDestroy;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.util.ClassUtils;
-
 public class Asynchronous {
     private static Logger logger = LoggerFactory.getLogger(Asynchronous.class);
-
     private static Timer timer = new Timer(true);
-
     AtomicInteger completed;
     Map<Method, ExecutionInfo> info = new HashMap<Method, ExecutionInfo>();
     private ThreadPoolTaskExecutor executor;
     private BlockingDeque<AsynchronousFutureTask<?>> workQueue;
+    private ExceptionListener exceptionListener;
 
     public Asynchronous() {
         this(3);
@@ -76,6 +75,10 @@ public class Asynchronous {
 
     public void scheduleRepeatTask(TimerTask task, long interval) {
         timer.schedule(task, interval, interval);
+    }
+
+    public void setExceptionListener(ExceptionListener listener) {
+        this.exceptionListener = listener;
     }
 
     public int size() {
@@ -135,7 +138,11 @@ public class Asynchronous {
                         } catch (InterruptedException e) {
                             logger.warn("Asynchronous was interrupted with queue size at {}", workQueue.size());
                         } catch (ExecutionException e) {
-                            logger.error("Unhandled Exception in {} with {}", task.getMethod(), task.getArguments(), e);
+                            if (exceptionListener != null) {
+                                exceptionListener.exceptionThrown(e);
+                            } else {
+                                logger.error("Unhandled Exception in {} with {}", task.getMethod(), task.getArguments(), e);
+                            }
                         }
 
                         long duration = System.currentTimeMillis() - startTime;
