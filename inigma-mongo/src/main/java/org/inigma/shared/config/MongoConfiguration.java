@@ -1,12 +1,9 @@
 package org.inigma.shared.config;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.WriteConcern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,26 +12,27 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.ClassUtils;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.WriteConcern;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Dynamically loads and reloads configuration settings from a collection. The data model is presumed to be in the
  * following syntax.
- * 
+ * <p/>
  * <pre>
  * {_id: string, value: object}
  * </pre>
- * 
+ *
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public class MongoConfiguration extends AbstractConfiguration {
     private static final String KEY = "_id";
     private static final Timer TIMER = new Timer(true);
     private static final Logger logger = LoggerFactory.getLogger(MongoConfiguration.class);
-
     private final MongoOperations mongo;
     private final String collection;
     private TimerTask reloadTask;
