@@ -5,13 +5,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
 class AsynchronousFutureTask<V> extends FutureTask<V> {
     private final Method method;
     private final Object[] args;
+    private final AsynchronousCallback<V> callback;
 
-    public AsynchronousFutureTask(final Object instance, final Method method, final Object... args) {
+    public AsynchronousFutureTask(AsynchronousCallback<V> callback, final Object instance, final Method method, final Object... args) {
         super(new Callable<V>() {
             @Override
             public V call() throws Exception {
@@ -21,6 +23,7 @@ class AsynchronousFutureTask<V> extends FutureTask<V> {
         });
         this.method = method;
         this.args = args;
+        this.callback = callback;
     }
 
     public Collection<Object> getArguments() {
@@ -29,7 +32,11 @@ class AsynchronousFutureTask<V> extends FutureTask<V> {
         }
         return Arrays.asList(args);
     }
-    
+
+    public AsynchronousCallback<V> getCallback() {
+        return callback;
+    }
+
     public Method getMethod() {
         return method;
     }

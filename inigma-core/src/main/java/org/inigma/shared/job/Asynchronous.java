@@ -6,7 +6,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.ClassUtils;
 
 import javax.annotation.PreDestroy;
-import java.beans.ExceptionListener;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,7 +27,6 @@ public class Asynchronous {
     Map<Method, ExecutionInfo> info = new HashMap<Method, ExecutionInfo>();
     private ThreadPoolTaskExecutor executor;
     private BlockingDeque<AsynchronousFutureTask<?>> workQueue;
-    private ExceptionListener exceptionListener;
 
     public Asynchronous() {
         this(3);
@@ -56,7 +54,7 @@ public class Asynchronous {
         if (!info.containsKey(method)) {
             info.put(method, new ExecutionInfo());
         }
-        AsynchronousFutureTask<T> task = new AsynchronousFutureTask<T>(instance, method, args);
+        AsynchronousFutureTask<T> task = new AsynchronousFutureTask<T>(null, instance, method, args);
         try {
             workQueue.put(task);
         } catch (InterruptedException e) {
@@ -69,16 +67,27 @@ public class Asynchronous {
         return invoke(instance, findMethod(instance, method, args), args);
     }
 
+    public void invokeWithCallback(AsynchronousCallback callback, final Object instance, final String method, final Object... args) {
+        invokeWithCallback(callback, instance, findMethod(instance, method, args), args);
+    }
+
+    public void invokeWithCallback(AsynchronousCallback callback, final Object instance, final Method method, final Object... args) {
+        if (!info.containsKey(method)) {
+            info.put(method, new ExecutionInfo());
+        }
+        try {
+            workQueue.put(new AsynchronousFutureTask(callback, instance, method, args));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public boolean isEmpty() {
         return this.workQueue.isEmpty();
     }
 
     public void scheduleRepeatTask(TimerTask task, long interval) {
         timer.schedule(task, interval, interval);
-    }
-
-    public void setExceptionListener(ExceptionListener listener) {
-        this.exceptionListener = listener;
     }
 
     public int size() {
@@ -127,19 +136,23 @@ public class Asynchronous {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    AsynchronousFutureTask<?> task = null;
+                    AsynchronousFutureTask task = null;
                     while (true) {
                         long startTime = System.currentTimeMillis();
                         try {
                             task = workQueue.take();
                             task.run();
                             completed.incrementAndGet();
-                            task.get(); // this is to force exception captured to be thrown. maybe better way???
+                            if (task.getCallback() != null) {
+                                task.getCallback().onCompletion(task.get(), task);
+                            } else {
+                                task.get(); // this is to force exception captured to be thrown. maybe better way???
+                            }
                         } catch (InterruptedException e) {
                             logger.warn("Asynchronous was interrupted with queue size at {}", workQueue.size());
                         } catch (ExecutionException e) {
-                            if (exceptionListener != null) {
-                                exceptionListener.exceptionThrown(e);
+                            if (task.getCallback() != null) {
+                                task.getCallback().onException(e, task);
                             } else {
                                 logger.error("Unhandled Exception in {} with {}", task.getMethod(), task.getArguments(), e);
                             }
