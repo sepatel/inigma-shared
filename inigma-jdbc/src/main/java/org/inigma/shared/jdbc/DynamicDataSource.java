@@ -1,21 +1,20 @@
 package org.inigma.shared.jdbc;
 
-import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.SQLException;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.sql.DataSource;
-
+import com.jolbox.bonecp.BoneCPConfig;
+import com.jolbox.bonecp.BoneCPDataSource;
 import org.inigma.shared.config.Configuration;
 import org.inigma.shared.config.ConfigurationObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.jolbox.bonecp.BoneCPConfig;
-import com.jolbox.bonecp.BoneCPDataSource;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.sql.DataSource;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 
 public class DynamicDataSource implements DataSource, ConfigurationObserver {
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -40,13 +39,17 @@ public class DynamicDataSource implements DataSource, ConfigurationObserver {
     }
 
     @Override
+    public PrintWriter getLogWriter() throws SQLException {
+        return ds.getLogWriter();
+    }
+
+    @Override
     public int getLoginTimeout() throws SQLException {
         return ds.getLoginTimeout();
     }
 
-    @Override
-    public PrintWriter getLogWriter() throws SQLException {
-        return ds.getLogWriter();
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException();
     }
 
     @PostConstruct
@@ -101,13 +104,13 @@ public class DynamicDataSource implements DataSource, ConfigurationObserver {
     }
 
     @Override
-    public void setLoginTimeout(int seconds) throws SQLException {
-        ds.setLoginTimeout(seconds);
+    public void setLogWriter(PrintWriter out) throws SQLException {
+        ds.setLogWriter(out);
     }
 
     @Override
-    public void setLogWriter(PrintWriter out) throws SQLException {
-        ds.setLogWriter(out);
+    public void setLoginTimeout(int seconds) throws SQLException {
+        ds.setLoginTimeout(seconds);
     }
 
     @Override

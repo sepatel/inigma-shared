@@ -1,11 +1,10 @@
 package org.inigma.shared.config;
 
-import static org.junit.Assert.*;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import org.inigma.shared.crypto.CryptoService;
+import org.inigma.shared.crypto.RsaKeyPair;
 import org.inigma.shared.test.CategoryClassRunner;
 import org.inigma.shared.test.TestCategory;
 import org.junit.Before;
@@ -15,12 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.test.context.ContextConfiguration;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
+import java.security.GeneralSecurityException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 @RunWith(CategoryClassRunner.class)
-@ContextConfiguration(locations = { "/datastore.xml" })
+@ContextConfiguration(locations = {"/datastore.xml"})
 @TestCategory("testMongo")
 public class MongoConfigurationIT {
     private static class TestObject {
@@ -76,26 +78,16 @@ public class MongoConfigurationIT {
     }
 
     @Test
-    public void readString() {
-        assertEquals("my string text", config.getString("test_string"));
-    }
-    
-    @Test
     public void readObjectFromInitializedReadings() {
         config = new MongoConfiguration(mongo, "testConfig");
         readObject(); // rerun some tests.
         readMap();
         readList();
     }
-    
+
     @Test
-    public void writeThenReadDate() {
-        Date now = new Date();
-        config.set("test_current_date", now);
-        config = new MongoConfiguration(mongo, "testConfig");
-        Date date = config.getDate("test_current_date");
-        assertNotNull(date);
-        assertEquals(now.getTime(), date.getTime());
+    public void readString() {
+        assertEquals("my string text", config.getString("test_string"));
     }
 
     @Before
@@ -119,5 +111,27 @@ public class MongoConfigurationIT {
         list.add("World Championship");
         collection.insert(new BasicDBObject("_id", "test_list").append("value", list));
         collection.insert(new BasicDBObject("_id", "test_date").append("value", new Date()));
+    }
+
+    @Test
+    public void writeThenReadDate() {
+        Date now = new Date();
+        config.set("test_current_date", now);
+        config = new MongoConfiguration(mongo, "testConfig");
+        Date date = config.getDate("test_current_date");
+        assertNotNull(date);
+        assertEquals(now.getTime(), date.getTime());
+    }
+
+    @Test
+    public void writeThenReadRsaKeyPair() throws GeneralSecurityException {
+        RsaKeyPair keyPair = CryptoService.generateKeyPair(2048);
+        config.set("test_keypair", keyPair);
+        config = new MongoConfiguration(mongo, "testConfig");
+        RsaKeyPair oldPair = config.get("test_keypair", RsaKeyPair.class);
+        assertNotNull(oldPair);
+        assertEquals(keyPair.getPrivateKey().getModulus(), oldPair.getPrivateKey().getModulus());
+        assertEquals(keyPair.getPrivateKey().getPrivateExponent(), oldPair.getPrivateKey().getPrivateExponent());
+        assertEquals(keyPair.getPublicKey().getPublicExponent(), oldPair.getPublicKey().getPublicExponent());
     }
 }
