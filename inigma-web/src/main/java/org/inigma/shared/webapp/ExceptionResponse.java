@@ -1,6 +1,6 @@
 package org.inigma.shared.webapp;
 
-class ExceptionResponse {
+public class ExceptionResponse {
     private Exception exception;
     
     public ExceptionResponse(Exception e) {
