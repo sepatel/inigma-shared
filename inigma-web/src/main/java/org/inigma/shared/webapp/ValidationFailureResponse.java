@@ -3,7 +3,7 @@ package org.inigma.shared.webapp;
 import java.util.ArrayList;
 import java.util.Collection;
 
-class ValidationFailureResponse {
+public class ValidationFailureResponse {
     private static class FieldErrorResponse extends ObjectErrorResponse {
         private String field;
 
