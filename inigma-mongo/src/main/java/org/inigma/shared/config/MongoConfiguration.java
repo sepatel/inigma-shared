@@ -4,13 +4,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.util.ClassUtils;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -18,6 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.util.ClassUtils;
 
 /**
  * Dynamically loads and reloads configuration settings from a collection. The data model is presumed to be in the
@@ -126,9 +127,11 @@ public class MongoConfiguration extends AbstractConfiguration {
                 newconfigs.put((String) entry.get(KEY), convertValueToResult(entry.get("value"), null));
             }
         } catch (IllegalStateException e) {
+            e.printStackTrace();
             logger.error("Unable to check for configuration updates!", e);
         } catch (RuntimeException e) {
-            logger.error("Unable to update configurations due to unexpected error!", e);
+            e.printStackTrace();
+            logger.error("Unable to update configurations due to unexpected error", e);
         }
         super.reload(newconfigs);
     }
