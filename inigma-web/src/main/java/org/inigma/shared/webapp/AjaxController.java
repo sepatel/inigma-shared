@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindException;
@@ -22,14 +24,19 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Base controller providing access to a common set of functionality.
- * 
+ *
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public abstract class AjaxController {
     protected Logger logger = LoggerFactory.getLogger(getClass());
-
     @Autowired
     private MessageSource messageSource;
+
+    @ExceptionHandler({ AccessDeniedException.class, InsufficientAuthenticationException.class })
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public String handleAccessDeniedException() {
+        return "/error/page/401";
+    }
 
     @ExceptionHandler({ BindException.class, RuntimeBindException.class })
     @ResponseBody
@@ -63,7 +70,7 @@ public abstract class AjaxController {
     protected Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
-    
+
     protected Object returnFailureResponse(String code, String message) {
         ValidationFailureResponse vfr = new ValidationFailureResponse();
         vfr.reject(code, message);
