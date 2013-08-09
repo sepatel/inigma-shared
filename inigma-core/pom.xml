@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.inigma.shared</groupId>
     <artifactId>inigma-parent</artifactId>
-    <version>0.7</version>
+    <version>0.8-SNAPSHOT</version>
   </parent>
 
   <artifactId>inigma-core</artifactId>
