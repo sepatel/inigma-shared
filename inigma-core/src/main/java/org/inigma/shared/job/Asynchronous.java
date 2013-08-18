@@ -6,6 +6,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.ClassUtils;
 
 import javax.annotation.PreDestroy;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,7 +34,11 @@ public class Asynchronous {
     }
 
     public Asynchronous(int workers) {
-        this.workQueue = new LinkedBlockingDeque<AsynchronousFutureTask<?>>();
+        this(workers, Integer.MAX_VALUE);
+    }
+
+    public Asynchronous(int workers, int capacity) {
+        this.workQueue = new LinkedBlockingDeque<AsynchronousFutureTask<?>>(capacity);
         this.completed = new AtomicInteger();
         executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(workers);
