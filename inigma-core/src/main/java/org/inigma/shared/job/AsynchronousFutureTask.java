@@ -40,4 +40,9 @@ class AsynchronousFutureTask<V> extends FutureTask<V> {
     public Method getMethod() {
         return method;
     }
+
+    public String toString() {
+        return String.format("%s(%s)", getMethod(), getArguments());
+    }
 }
+
