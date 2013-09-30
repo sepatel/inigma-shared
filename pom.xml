@@ -9,7 +9,7 @@
 
   <groupId>org.inigma.shared</groupId>
   <artifactId>inigma-parent</artifactId>
-  <version>0.7.2-SNAPSHOT</version>
+  <version>0.7.2</version>
   <name>Parent Project</name>
   <packaging>pom</packaging>
 
