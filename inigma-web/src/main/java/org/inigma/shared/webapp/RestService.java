@@ -48,9 +48,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public abstract class RestService {
     protected static final ObjectMapper MAPPER = new ObjectMapper();
     static final String REQUEST_AS_STRING = "org.inigma.request.string";
+    static final String ERRORS = "org.inigma.errors";
     private static final String REQUEST_FOR_FIELD_CHECK = "org.inigma.request.fieldCheck";
     private static final String HTTP_STATUS = "org.inigma.request.httpStatus";
-    private static final String ERRORS = "org.inigma.errors";
     private static final String RESPONSE_OBJECT = "org.inigma.response.object";
     private static final Splitter PATH_SPLITTER = Splitter.on(CharMatcher.anyOf(".[]")).trimResults()
             .omitEmptyStrings();
@@ -221,12 +221,7 @@ public abstract class RestService {
 
     private static List<GlobalError> getInternalErrors() {
         HttpServletRequest request = getHttpServletRequest();
-        List<GlobalError> errors = (List<GlobalError>) request.getAttribute(ERRORS);
-        if (errors == null) {
-            errors = CollectionsUtil.appendOnlyList();
-            request.setAttribute(ERRORS, errors);
-        }
-        return errors;
+        return (List<GlobalError>) request.getAttribute(ERRORS);
     }
 
     private static Iterable<String> getPathParts(String field) {

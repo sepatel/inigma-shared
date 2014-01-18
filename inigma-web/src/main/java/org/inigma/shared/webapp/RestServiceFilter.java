@@ -10,6 +10,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
+import org.inigma.shared.tools.CollectionsUtil;
+
 /**
  * <p>This servlet filter caches the request data and allows its reading via reader/stream an unlimited number of times.
  * Warning, this does mean that the request data coming in is being cached and thus consuming a larger then normal
@@ -30,6 +32,9 @@ public class RestServiceFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain fc) throws IOException, ServletException {
+        req.setAttribute(RestService.ERRORS, CollectionsUtil.appendOnlyList());
+        req.setAttribute(RestService.REQUEST_AS_STRING, "");
+
         HttpServletRequest request = (HttpServletRequest) req;
         if (request.getHeader("X-CACHE-IGNORE") != null) { // emergency fallback in case of file upload or something.
             fc.doFilter(req, resp);
