@@ -5,9 +5,6 @@ public class Message {
     private String locale;
     private String value;
 
-    public Message() {
-    }
-
     public String getCode() {
         return code;
     }

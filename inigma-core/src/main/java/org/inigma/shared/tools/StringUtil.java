@@ -1,7 +1,6 @@
 package org.inigma.shared.tools;
 
 public abstract class StringUtil {
-
     public static String snakeToCamel(String string) {
         if (string == null || string.isEmpty()) {
             return string;

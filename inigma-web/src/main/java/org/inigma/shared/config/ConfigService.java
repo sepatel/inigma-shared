@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.inigma.shared.webapp.AjaxController;
+import org.inigma.shared.webapp.RestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.ClassUtils;
@@ -17,7 +18,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping("/inigma")
-public class ConfigController extends AjaxController {
+public class ConfigService extends RestService {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     @Autowired
     private Configuration configuration;
 
@@ -32,17 +34,6 @@ public class ConfigController extends AjaxController {
     public Object getConfig(@PathVariable String key, @PathVariable String type) {
         return configuration.get(key, convertToClass(type));
     }
-
-    /*
-    @RequestMapping(value = "/config", method = RequestMethod.POST)
-    @ResponseBody
-    public Object setConfig(@RequestBody Map<String, Object> value) {
-        for (Entry<String, Object> entry : value.entrySet()) {
-            configuration.set(entry.getKey(), entry.getValue());
-        }
-        return value;
-    }
-    */
 
     @RequestMapping(value = "/config/{key}/{type}", method = RequestMethod.POST)
     @ResponseBody
@@ -71,16 +62,13 @@ public class ConfigController extends AjaxController {
         } else if ("date".equalsIgnoreCase(type)) {
             value = new Date(Long.parseLong(jsonValue));
         } else if ("list".equalsIgnoreCase(type)) {
-            ObjectMapper om = new ObjectMapper();
-            value = om.readValue(jsonValue, List.class);
+            value = OBJECT_MAPPER.readValue(jsonValue, List.class);
         } else if ("map".equalsIgnoreCase(type)) {
-            ObjectMapper om = new ObjectMapper();
-            value = om.readValue(jsonValue, Map.class);
+            value = OBJECT_MAPPER.readValue(jsonValue, Map.class);
         } else if ("string".equalsIgnoreCase(type)) {
             value = jsonValue;
         } else {
-            ObjectMapper om = new ObjectMapper();
-            value = om.readValue(jsonValue, clazz);
+            value = OBJECT_MAPPER.readValue(jsonValue, clazz);
         }
         return configuration.set(key, value);
     }

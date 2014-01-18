@@ -12,6 +12,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 
+@Deprecated
 public class RuntimeBindException extends RuntimeException implements BindingResult {
     private BindingResult ref;
 

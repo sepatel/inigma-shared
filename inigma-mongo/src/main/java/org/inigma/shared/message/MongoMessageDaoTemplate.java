@@ -11,16 +11,16 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MessageDaoTemplate {
+public class MongoMessageDaoTemplate implements MessageDaoTemplate {
     @Autowired
     protected MongoOperations mongo;
     private String collection;
 
-    public MessageDaoTemplate() {
+    public MongoMessageDaoTemplate() {
         this("message");
     }
 
-    public MessageDaoTemplate(String collection) {
+    public MongoMessageDaoTemplate(String collection) {
         this.collection = collection;
     }
 

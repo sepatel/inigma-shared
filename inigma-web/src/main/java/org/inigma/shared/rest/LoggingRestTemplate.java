@@ -2,20 +2,16 @@ package org.inigma.shared.rest;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.channels.InterruptibleChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -23,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
  * @since 7/10/13 11:26 AM
  */
 public class LoggingRestTemplate extends RestTemplate implements ClientHttpRequestInterceptor {
-    private static final WebServiceLogHandler DEFAULT_HANDLER = new WebServiceLogHandler() {
+    private static final WebServiceLogHandler NOOP_HANDLER = new WebServiceLogHandler() {
         @Override
         public void onWebServiceLog(WebServiceLog log) {
             // noop();
@@ -32,7 +28,7 @@ public class LoggingRestTemplate extends RestTemplate implements ClientHttpReque
     private WebServiceLogHandler handler;
 
     public LoggingRestTemplate() {
-        this.handler = DEFAULT_HANDLER;
+        this.handler = NOOP_HANDLER;
         setInterceptors(Collections.EMPTY_LIST);
     }
 
@@ -53,6 +49,11 @@ public class LoggingRestTemplate extends RestTemplate implements ClientHttpReque
 
     @Override
     public ClientHttpResponse intercept(HttpRequest req, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+        if (this.handler == NOOP_HANDLER) {
+            // Short Circuit the process since we know default handler is a no-op
+            return new HttpResponseWrapper(execution.execute(req, body));
+        }
+
         WebServiceLog log = new WebServiceLog();
         log.setUrl(req.getURI().toURL().toString());
         log.setMethod(req.getMethod());

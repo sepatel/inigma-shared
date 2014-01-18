@@ -9,7 +9,7 @@
 
   <groupId>org.inigma.shared</groupId>
   <artifactId>inigma-parent</artifactId>
-  <version>0.7.4-SNAPSHOT</version>
+  <version>0.8-SNAPSHOT</version>
   <name>Parent Project</name>
   <packaging>pom</packaging>
 
@@ -20,12 +20,13 @@
   </scm>
 
   <properties>
-    <spring.version>3.1.3.RELEASE</spring.version>
+    <spring.version>3.1.4.RELEASE</spring.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <build>
     <defaultGoal>clean package</defaultGoal>
+    <!-- <finalName>${project.artifactId}-${scmVersion}</finalName> -->
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -58,6 +59,22 @@
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
       </plugin>
+<!--
+      <plugin>
+        <groupId>org.inigma.maven</groupId>
+        <artifactId>maven-scm-version-plugin</artifactId>
+        <version>1.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>gitVersion</goal>
+              <goal>pomInstall</goal>
+              <goal>pomDeploy</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+-->
     </plugins>
   </build>
 
@@ -102,9 +119,9 @@
 
   <modules>
     <module>inigma-core</module>
+    <module>inigma-web</module>
     <module>inigma-mongo</module>
     <module>inigma-jdbc</module>
-    <module>inigma-web</module>
     <module>inigma-tracking</module>
   </modules>
 </project>
