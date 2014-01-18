@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.inigma.shared.tools.CollectionsUtil;
 
 /**
+ * <strong>Important</strong>: This filter is REQUIRED to utilize the RestService.
  * <p>This servlet filter caches the request data and allows its reading via reader/stream an unlimited number of times.
  * Warning, this does mean that the request data coming in is being cached and thus consuming a larger then normal
  * amount of resources but this should be trivial for RESTful web service calls. It may however be an issue if such
