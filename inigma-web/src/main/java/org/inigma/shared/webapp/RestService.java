@@ -19,7 +19,6 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.inigma.shared.message.NoopMessageSource;
 import org.inigma.shared.tools.ClassUtil;
@@ -48,9 +47,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  */
 public abstract class RestService {
     protected static final ObjectMapper MAPPER = new ObjectMapper();
+    static final String REQUEST_AS_STRING = "org.inigma.request.string";
     private static final String REQUEST_FOR_FIELD_CHECK = "org.inigma.request.fieldCheck";
     private static final String HTTP_STATUS = "org.inigma.request.httpStatus";
-    private static final String REQUEST_AS_STRING = "org.inigma.request.string";
     private static final String ERRORS = "org.inigma.errors";
     private static final String RESPONSE_OBJECT = "org.inigma.response.object";
     private static final Splitter PATH_SPLITTER = Splitter.on(CharMatcher.anyOf(".[]")).trimResults()
@@ -235,17 +234,7 @@ public abstract class RestService {
     }
 
     private static String getRawRequestBody() {
-        try {
-            HttpServletRequest request = getHttpServletRequest();
-            String body = (String) request.getAttribute(REQUEST_AS_STRING);
-            if (body == null) {
-                body = IOUtils.toString(request.getReader()).trim();
-                request.setAttribute(REQUEST_AS_STRING, body);
-            }
-            return body;
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        return (String) getHttpServletRequest().getAttribute(REQUEST_AS_STRING);
     }
 
     private static void setHttpStatus(HttpStatus httpStatus) {

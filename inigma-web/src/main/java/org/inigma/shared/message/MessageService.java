@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -59,8 +60,7 @@ public class MessageService extends RestService {
     }
 
     @RequestMapping(value = "/message", method = { RequestMethod.POST, RequestMethod.PUT })
-    public Response updateMessage() {
-        Message message = getRequest(Message.class);
+    public Response updateMessage(@RequestBody Message message) {
         rejectIfEmptyOrWhitespace("code");
         rejectIfWhitespace("locale", false);
         rejectIfEmptyOrWhitespace("value");

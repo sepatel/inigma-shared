@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * This servlet filter adds the headers needed to allow CORS (Cross Origin Resource Sharing) compliant browsers to be
  * able and make direct ajax calls without the need for a proxy.
- * 
+ *
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public class CorsServletFilter implements Filter {
@@ -30,7 +30,6 @@ public class CorsServletFilter implements Filter {
         if ("OPTIONS".equals(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         }
-
         String origin = request.getHeader("Origin");
         if (origin == null) {
             origin = "*";
