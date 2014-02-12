@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.inigma.shared.message.NoopMessageSource;
 import org.inigma.shared.tools.ClassUtil;
-import org.inigma.shared.tools.CollectionsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +29,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
@@ -60,6 +60,10 @@ public abstract class RestService {
 
     public static Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
+    }
+
+    public static String getRawRequestBody() {
+        return (String) getHttpServletRequest().getAttribute(REQUEST_AS_STRING);
     }
 
     public static <T> T getRequest(Class<T> type) {
@@ -112,7 +116,7 @@ public abstract class RestService {
     }
 
     public static void reject(String code, String message) {
-        getInternalErrors().add(new GlobalError(code, message));
+        getInternalErrors().add(new Rejection(code, message));
     }
 
     public static void rejectField(String field, String code) {
@@ -120,7 +124,7 @@ public abstract class RestService {
     }
 
     public static void rejectField(String field, String code, String message) {
-        getInternalErrors().add(new FieldError(field, code, message));
+        getInternalErrors().add(new FieldRejection(field, code, message));
     }
 
     public static void rejectIfEmptyOrWhitespace(String field) {
@@ -219,17 +223,13 @@ public abstract class RestService {
         return status;
     }
 
-    private static List<GlobalError> getInternalErrors() {
+    private static List<Rejection> getInternalErrors() {
         HttpServletRequest request = getHttpServletRequest();
-        return (List<GlobalError>) request.getAttribute(ERRORS);
+        return (List<Rejection>) request.getAttribute(ERRORS);
     }
 
     private static Iterable<String> getPathParts(String field) {
         return PATH_SPLITTER.split(field);
-    }
-
-    private static String getRawRequestBody() {
-        return (String) getHttpServletRequest().getAttribute(REQUEST_AS_STRING);
     }
 
     private static void setHttpStatus(HttpStatus httpStatus) {
@@ -241,18 +241,18 @@ public abstract class RestService {
     private MessageSource messageSource = new NoopMessageSource();
 
     @ExceptionHandler({ AccessDeniedException.class, InsufficientAuthenticationException.class })
-    public Response handleAccessDeniedException() {
+    public ResponseEntity handleAccessDeniedException() {
         reject("unauthorized");
         return response(null, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler({ ResponseException.class })
-    public Response handleResponseException() {
+    public ResponseEntity handleResponseException() {
         return response();
     }
 
     @ExceptionHandler
-    public Response handleUnknownExceptions(Exception e) {
+    public ResponseEntity handleUnknownExceptions(Exception e) {
         logger.error("Internal Server Exception", e);
         reject("exception", e.getMessage());
         return response(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -279,9 +279,9 @@ public abstract class RestService {
         }
     }
 
-    protected Response response() {
+    protected <E> ResponseEntity<E> response() {
         setErrorMessages();
-        List<GlobalError> errors = getInternalErrors();
+        List<Rejection> errors = getInternalErrors();
         Object responseObject = getHttpServletRequest().getAttribute(RESPONSE_OBJECT);
         if (responseObject == null) {
         } else if (responseObject instanceof Map) {
@@ -318,26 +318,26 @@ public abstract class RestService {
         if (isRejected() && status.series() != Series.CLIENT_ERROR && status.series() != Series.SERVER_ERROR) {
             status = HttpStatus.BAD_REQUEST;
         }
-        return new Response(responseObject, status);
+        return new ResponseEntity(responseObject, status);
     }
 
-    protected Response response(Object responseObject) {
+    protected <E> ResponseEntity<E> response(E responseObject) {
         setResponse(responseObject);
         return response();
     }
 
-    protected Response response(Object responseObject, HttpStatus status) {
+    protected <E> ResponseEntity<E> response(E responseObject, HttpStatus status) {
         setHttpStatus(status);
         setResponse(responseObject);
         return response();
     }
 
     protected void setErrorMessages() {
-        for (GlobalError error : getInternalErrors()) {
+        for (Rejection error : getInternalErrors()) {
             if (error.getMessage() == null) {
                 String code = error.getCode();
-                if (error instanceof FieldError) {
-                    code += "." + ((FieldError) error).getField();
+                if (error instanceof FieldRejection) {
+                    code += "." + ((FieldRejection) error).getField();
                 }
                 error.setMessage(messageSource.getMessage(code, null, LocaleContextHolder.getLocale()));
             }

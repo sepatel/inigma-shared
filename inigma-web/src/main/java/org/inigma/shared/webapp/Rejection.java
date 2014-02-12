@@ -3,11 +3,11 @@ package org.inigma.shared.webapp;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
-class GlobalError {
+public class Rejection {
     private final String code;
     private String message;
 
-    public GlobalError(String code, String message) {
+    public Rejection(String code, String message) {
         Preconditions.checkNotNull(code);
         this.code = code;
         this.message = message;
@@ -16,9 +16,9 @@ class GlobalError {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof GlobalError)) return false;
+        if (!(o instanceof Rejection)) return false;
 
-        GlobalError that = (GlobalError) o;
+        Rejection that = (Rejection) o;
 
         if (!code.equals(that.code)) return false;
 

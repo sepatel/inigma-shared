@@ -25,10 +25,18 @@ public class DataSourceConfig {
     }
 
     public int getMaxSize() {
+        if (maxSize <= 0) {
+            return Integer.MAX_VALUE;
+        }
         return maxSize;
     }
 
     public int getMinSize() {
+        if (minSize < 0) {
+            return 0;
+        } else if (minSize > maxSize) {
+            return maxSize;
+        }
         return minSize;
     }
 

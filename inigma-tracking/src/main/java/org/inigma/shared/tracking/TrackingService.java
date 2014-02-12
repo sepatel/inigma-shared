@@ -1,7 +1,7 @@
 package org.inigma.shared.tracking;
 
-import org.inigma.shared.webapp.Response;
 import org.inigma.shared.webapp.RestService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 public class TrackingService extends RestService {
     @RequestMapping(value = "/inigma/trackingNumber/{trackingNumber}", method = RequestMethod.GET)
-    public Response getMessage(@PathVariable String trackingNumber) {
+    public ResponseEntity<TrackingResponse> getMessage(@PathVariable String trackingNumber) {
         TrackingResponse response = createResponse(TrackingResponse.class);
         response.setNumber(trackingNumber);
         response.setType(TrackingUtil.getTrackingType(trackingNumber));

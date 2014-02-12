@@ -1,10 +1,11 @@
 package org.inigma.shared.message;
 
+import java.util.Collection;
 import java.util.Locale;
 
-import org.inigma.shared.webapp.Response;
 import org.inigma.shared.webapp.RestService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,12 +25,12 @@ public class MessageService extends RestService {
     private MessageDaoTemplate template;
 
     @RequestMapping(value = "/message/{code}", method = RequestMethod.DELETE)
-    public Response deleteMessage(@PathVariable String code) {
+    public ResponseEntity<Message> deleteMessage(@PathVariable String code) {
         return deleteMessage(code, null);
     }
 
     @RequestMapping(value = "/message/{code}/{locale}", method = RequestMethod.DELETE)
-    public Response deleteMessage(@PathVariable String code, @PathVariable String locale) {
+    public ResponseEntity<Message> deleteMessage(@PathVariable String code, @PathVariable String locale) {
         validateMessage(code, locale);
         Message message = template.delete(code, locale);
         if (message == null) {
@@ -39,13 +40,13 @@ public class MessageService extends RestService {
     }
 
     @RequestMapping(value = "/message/{code}", method = RequestMethod.GET)
-    public Response getMessage(@PathVariable String code) {
+    public ResponseEntity<Message> getMessage(@PathVariable String code) {
         logger.info("Code is {}", code);
         return getMessage(code, null);
     }
 
     @RequestMapping(value = "/message/{code}/{locale}", method = RequestMethod.GET)
-    public Response getMessage(@PathVariable String code, @PathVariable String locale) {
+    public ResponseEntity<Message> getMessage(@PathVariable String code, @PathVariable String locale) {
         validateMessage(code, locale);
         Message message = template.findById(code, locale);
         if (message == null) {
@@ -55,12 +56,12 @@ public class MessageService extends RestService {
     }
 
     @RequestMapping(value = "/messages", method = RequestMethod.GET)
-    public Response getMessages() {
+    public ResponseEntity<Collection<Message>> getMessages() {
         return response(template.find());
     }
 
     @RequestMapping(value = "/message", method = { RequestMethod.POST, RequestMethod.PUT })
-    public Response updateMessage(@RequestBody Message message) {
+    public ResponseEntity<Message> updateMessage(@RequestBody Message message) {
         rejectIfEmptyOrWhitespace("code");
         rejectIfWhitespace("locale", false);
         rejectIfEmptyOrWhitespace("value");
