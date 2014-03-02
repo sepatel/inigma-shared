@@ -280,37 +280,47 @@ public abstract class RestService {
     }
 
     protected <E> ResponseEntity<E> response() {
-        setErrorMessages();
-        List<Rejection> errors = getInternalErrors();
         Object responseObject = getHttpServletRequest().getAttribute(RESPONSE_OBJECT);
-        if (responseObject == null) {
-        } else if (responseObject instanceof Map) {
-            responseObject = Maps.newLinkedHashMap((Map) responseObject);
-        } else if (responseObject instanceof Number) {
-        } else if (responseObject instanceof Boolean) {
-        } else if (responseObject instanceof List) {
-        } else if (responseObject instanceof Iterable) {
-            responseObject = ImmutableList.copyOf((Iterable) responseObject);
-        } else if (responseObject instanceof Iterator) {
-            responseObject = ImmutableList.copyOf((Iterator) responseObject);
-        } else if (responseObject instanceof Object[]) {
-        } else if (responseObject instanceof Date) {
-        } else if (responseObject instanceof Calendar) {
-        } else if (responseObject instanceof String
-                || ClassUtil.instanceOf(responseObject, "org.bson.types.ObjectId")) {
-            responseObject = '"' + responseObject.toString() + '"';
-        } else {
-            try {
-                responseObject = MAPPER.readValue(MAPPER.writeValueAsBytes(responseObject), Map.class);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
+        if (isErrorCondition()) {
+            if (responseObject == null) {
+            } else if (responseObject instanceof Map) {
+                responseObject = Maps.newLinkedHashMap((Map) responseObject);
+            } else if (responseObject instanceof Number) {
+            } else if (responseObject instanceof Boolean) {
+            } else if (responseObject instanceof List) {
+            } else if (responseObject instanceof Iterable) {
+                responseObject = ImmutableList.copyOf((Iterable) responseObject);
+            } else if (responseObject instanceof Iterator) {
+                responseObject = ImmutableList.copyOf((Iterator) responseObject);
+            } else if (responseObject instanceof Object[]) {
+            } else if (responseObject instanceof Date) {
+            } else if (responseObject instanceof Calendar) {
+            } else if (responseObject instanceof String
+                    || ClassUtil.instanceOf(responseObject, "org.bson.types.ObjectId")) {
+                responseObject = '"' + responseObject.toString() + '"';
+            } else {
+                try {
+                    responseObject = MAPPER.readValue(MAPPER.writeValueAsBytes(responseObject), Map.class);
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+
+            setErrorMessages();
+            List<Rejection> errors = getInternalErrors();
+            if (!(responseObject instanceof Map)) {
+                responseObject = Collections.singletonMap("errors", errors);
+            } else {
+                ((Map) responseObject).put("errors", errors);
             }
         }
+        /*
         if (isErrorCondition() && !(responseObject instanceof Map)) {
             responseObject = Collections.singletonMap("errors", errors);
         } else if (responseObject instanceof Map) {
             ((Map) responseObject).put("errors", errors);
         }
+        */
 
         HttpStatus status = getHttpStatus();
         // It is ok to have no errors but return an error code. It is not ok to have errors but return a success.
