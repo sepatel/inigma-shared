@@ -8,12 +8,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public abstract class AbstractConfiguration implements Configuration {
-    private final Map<String, Object> configs = new HashMap<String, Object>();
-    private final Set<ConfigurationObserver> observers = new HashSet<ConfigurationObserver>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConfiguration.class);
+    private final Map<String, Object> configs = new HashMap<>();
+    private final Set<ConfigurationObserver> observers = new HashSet<>();
 
     @Override
     public boolean addObserver(ConfigurationObserver listener) {
@@ -37,11 +41,16 @@ public abstract class AbstractConfiguration implements Configuration {
     @SuppressWarnings("unchecked")
     public <T> T get(String key, Class<T> type) {
         if (!configs.containsKey(key)) { // load configuration into the cache if missing
-            T value = getValue(key, type);
-            if (value == null) {
-                return null;
+            try {
+                T value = getValue(key, type);
+                if (value == null) {
+                    return null;
+                }
+                configs.put(key, value);
+            } catch (RuntimeException e) { // unexpected issues
+                e.printStackTrace();
+                LOGGER.error("Issue retrieving configuration {} so ignoring", key, e);
             }
-            configs.put(key, value);
         }
         return (T) configs.get(key);
     }
@@ -244,7 +253,7 @@ public abstract class AbstractConfiguration implements Configuration {
     protected abstract <T> T getValue(String key, Class<T> type);
 
     protected final void reload(Map<String, Object> newconfigs) {
-        Set<String> existing = new HashSet<String>(configs.keySet());
+        Set<String> existing = new HashSet<>(configs.keySet());
         for (Entry<String, Object> entries : newconfigs.entrySet()) {
             String k = entries.getKey();
             Object v = entries.getValue();
