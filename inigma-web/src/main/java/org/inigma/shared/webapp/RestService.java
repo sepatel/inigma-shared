@@ -281,6 +281,10 @@ public abstract class RestService {
 
     protected <E> ResponseEntity<E> response() {
         Object responseObject = getHttpServletRequest().getAttribute(RESPONSE_OBJECT);
+        if (responseObject instanceof String || ClassUtil.instanceOf(responseObject, "org.bson.types.ObjectId")) {
+            responseObject = '"' + responseObject.toString().replaceAll("\"", "\\\"") + '"';
+        }
+
         if (isErrorCondition()) {
             if (responseObject == null) {
             } else if (responseObject instanceof Map) {
@@ -295,9 +299,7 @@ public abstract class RestService {
             } else if (responseObject instanceof Object[]) {
             } else if (responseObject instanceof Date) {
             } else if (responseObject instanceof Calendar) {
-            } else if (responseObject instanceof String
-                    || ClassUtil.instanceOf(responseObject, "org.bson.types.ObjectId")) {
-                responseObject = '"' + responseObject.toString() + '"';
+            } else if (responseObject instanceof String || ClassUtil.instanceOf(responseObject, "org.bson.types.ObjectId")) {
             } else {
                 try {
                     responseObject = MAPPER.readValue(MAPPER.writeValueAsBytes(responseObject), Map.class);
