@@ -1,12 +1,5 @@
 package org.inigma.shared.job;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.util.ClassUtils;
-
-import javax.annotation.PreDestroy;
-
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,6 +13,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.PreDestroy;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.ClassUtils;
 
 public class Asynchronous {
     private static Logger logger = LoggerFactory.getLogger(Asynchronous.class);
@@ -38,9 +38,14 @@ public class Asynchronous {
     }
 
     public Asynchronous(int workers, int capacity) {
-        this.workQueue = new LinkedBlockingDeque<AsynchronousFutureTask<?>>(capacity);
+        this(workers, capacity, "Asynchronous-");
+    }
+
+    public Asynchronous(int workers, int capacity, String threadNamePrefix) {
+        this.workQueue = new LinkedBlockingDeque<>(capacity);
         this.completed = new AtomicInteger();
         executor = new ThreadPoolTaskExecutor();
+        executor.setThreadNamePrefix(threadNamePrefix);
         executor.setCorePoolSize(workers);
         executor.setDaemon(true);
         initialize();
@@ -154,7 +159,9 @@ public class Asynchronous {
                                 task.get(); // this is to force exception captured to be thrown. maybe better way???
                             }
                         } catch (InterruptedException e) {
-                            logger.warn("Asynchronous was interrupted with queue size at {}", workQueue.size());
+                            if (workQueue.size() > 0) {
+                                logger.warn("Asynchronous was interrupted with queue size at {}", workQueue.size());
+                            }
                         } catch (ExecutionException e) {
                             if (task.getCallback() != null) {
                                 task.getCallback().onException(e, task);
