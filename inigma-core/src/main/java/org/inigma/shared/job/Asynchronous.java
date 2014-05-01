@@ -171,9 +171,11 @@ public class Asynchronous {
                         }
 
                         long duration = System.currentTimeMillis() - startTime;
-                        ExecutionInfo executionInfo = info.get(task.getMethod());
-                        executionInfo.incrementCount();
-                        executionInfo.addDuration(duration);
+                        if (task != null) {
+                            ExecutionInfo executionInfo = info.get(task.getMethod());
+                            executionInfo.incrementCount();
+                            executionInfo.addDuration(duration);
+                        }
                     }
                 }
             });
