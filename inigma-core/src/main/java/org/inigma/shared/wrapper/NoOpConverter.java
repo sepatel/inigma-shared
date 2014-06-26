@@ -1,6 +1,4 @@
-package org.inigma.shared.mongo;
-
-import com.mongodb.DBObject;
+package org.inigma.shared.wrapper;
 
 import org.springframework.core.convert.converter.Converter;
 
@@ -10,11 +8,11 @@ import org.springframework.core.convert.converter.Converter;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  * @since 6/24/14 11:25 AM
  */
-public class NoOpConverter implements Converter<DBObject, DBObject> {
+public class NoOpConverter<T> implements Converter<T, T> {
     public static final NoOpConverter SINGLETON = new NoOpConverter();
 
     @Override
-    public DBObject convert(DBObject source) {
+    public T convert(T source) {
         return source;
     }
 }

@@ -3,9 +3,7 @@ package org.inigma.shared.mongo;
 import com.mongodb.AggregationOutput;
 import com.mongodb.DBObject;
 
-import java.util.AbstractCollection;
-import java.util.Iterator;
-
+import org.inigma.shared.wrapper.IterableConverter;
 import org.springframework.core.convert.converter.Converter;
 
 /**
@@ -16,42 +14,18 @@ import org.springframework.core.convert.converter.Converter;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  * @since 6/24/14 11:14 AM
  */
-public class AggregationOutputConvertingCollection<T> extends AbstractCollection<T> {
-    private final AggregationOutput cursor;
-    private final Converter<DBObject, T> converter;
+public class AggregationOutputConvertingCollection<T> extends IterableConverter<DBObject, T> {
     private int size = -1;
 
     public AggregationOutputConvertingCollection(final AggregationOutput ref, final Converter<DBObject, T> converter) {
-        this.cursor = ref;
-        this.converter = converter;
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        final Iterator<DBObject> iterator = cursor.results().iterator();
-        return new Iterator<T>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public T next() {
-                return converter.convert(iterator.next());
-            }
-
-            @Override
-            public void remove() {
-                iterator.remove();
-            }
-        };
+        super(ref.results(), converter);
     }
 
     @Override
     public synchronized int size() {
         if (size == -1) {
             size = 0;
-            for (DBObject o : cursor.results()) {
+            for (DBObject o : getSource()) {
                 size++;
             }
         }

@@ -3,9 +3,7 @@ package org.inigma.shared.mongo;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-import java.util.AbstractCollection;
-import java.util.Iterator;
-
+import org.inigma.shared.wrapper.IterableConverter;
 import org.springframework.core.convert.converter.Converter;
 
 /**
@@ -16,34 +14,12 @@ import org.springframework.core.convert.converter.Converter;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  * @since 6/24/14 11:14 AM
  */
-public class DBCursorConvertingCollection<T> extends AbstractCollection<T> {
+public class DBCursorConvertingCollection<T> extends IterableConverter<DBObject, T> {
     private final DBCursor cursor;
-    private final Converter<DBObject, T> converter;
 
-    public DBCursorConvertingCollection(final DBCursor ref, final Converter<DBObject, T> converter) {
+    public DBCursorConvertingCollection(DBCursor ref, Converter<DBObject, T> converter) {
+        super(ref, converter);
         this.cursor = ref;
-        this.converter = converter;
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        final Iterator<DBObject> iterator = cursor.iterator();
-        return new Iterator<T>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public T next() {
-                return converter.convert(iterator.next());
-            }
-
-            @Override
-            public void remove() {
-                iterator.remove();
-            }
-        };
     }
 
     @Override
