@@ -9,7 +9,7 @@
 
   <groupId>org.inigma.shared</groupId>
   <artifactId>inigma-parent</artifactId>
-  <version>0.10.0</version>
+  <version>0.10.1-SNAPSHOT</version>
   <name>Parent Project</name>
   <packaging>pom</packaging>
 
@@ -17,7 +17,7 @@
     <connection>scm:git:git://github.com/sepatel/inigma-shared.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/sepatel/inigma-shared</developerConnection>
     <url>http://github.com/sepatel/inigma-shared</url>
-    <tag>inigma-parent-0.10.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
