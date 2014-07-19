@@ -19,6 +19,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.inigma.shared.message.NoopMessageSource;
 import org.inigma.shared.tools.ClassUtil;
@@ -54,6 +55,10 @@ public abstract class RestService {
     private static final String RESPONSE_OBJECT = "org.inigma.response.object";
     private static final Splitter PATH_SPLITTER = Splitter.on(CharMatcher.anyOf(".[]")).trimResults()
             .omitEmptyStrings();
+
+    static {
+        MAPPER.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     private static class ResponseException extends RuntimeException {
     }
