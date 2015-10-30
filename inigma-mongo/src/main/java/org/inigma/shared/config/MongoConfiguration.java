@@ -5,6 +5,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteConcern;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -16,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -31,12 +30,12 @@ import org.springframework.util.ClassUtils;
  * @author <a href="mailto:sejal@inigma.org">Sejal Patel</a>
  */
 public class MongoConfiguration extends AbstractConfiguration {
-    private static final String KEY = "_id";
     private static final Timer TIMER = new Timer(true);
     private static final Logger logger = LoggerFactory.getLogger(MongoConfiguration.class);
     private final MongoOperations mongo;
     private final String collection;
     private TimerTask reloadTask;
+    private String application;
 
     @Autowired
     public MongoConfiguration(MongoOperations ds) {
@@ -48,6 +47,14 @@ public class MongoConfiguration extends AbstractConfiguration {
         this.collection = collection;
 
         reload();
+    }
+
+    public String getApplication() {
+        return application;
+    }
+
+    public void setApplication(String application) {
+        this.application = application;
     }
 
     public void setPollingFrequency(long pollingFrequency) {
@@ -67,7 +74,7 @@ public class MongoConfiguration extends AbstractConfiguration {
 
     @Override
     protected <T> T getValue(String key, Class<T> type) {
-        DBObject object = mongo.getCollection(collection).findOne(new BasicDBObject(KEY, key));
+        DBObject object = mongo.getCollection(collection).findOne(findByIdQuery(key));
         if (object == null) {
             return null;
         }
@@ -76,12 +83,13 @@ public class MongoConfiguration extends AbstractConfiguration {
 
     @Override
     protected void removeValue(String key) {
-        mongo.remove(Query.query(Criteria.where(KEY).is(key)), collection); // TODO: Journal safe this bit
+        mongo.getCollection(collection).remove(findByIdQuery(key), WriteConcern.JOURNAL_SAFE);
     }
 
     @Override
     protected void setValue(String key, Object value) {
-        BasicDBObject data = new BasicDBObject(KEY, key);
+        BasicDBObject query = findByIdQuery(key);
+        BasicDBObject data = findByIdQuery(key); // want a new copy not a shared copy
         if (value == null || ClassUtils.isPrimitiveOrWrapper(value.getClass())
                 || ClassUtils.isAssignableValue(String.class, value) || ClassUtils.isAssignableValue(Date.class, value)) {
             data.append("value", value);
@@ -95,8 +103,7 @@ public class MongoConfiguration extends AbstractConfiguration {
             data.append("value", sink);
         }
 
-        mongo.getCollection(collection).update(new BasicDBObject(KEY, key), data, true, false,
-                WriteConcern.JOURNAL_SAFE);
+        mongo.getCollection(collection).update(query, new BasicDBObject("$set", data), true, false, WriteConcern.JOURNAL_SAFE);
     }
 
     private <T> T convertValueToResult(Object value, Class<T> type) {
@@ -120,16 +127,29 @@ public class MongoConfiguration extends AbstractConfiguration {
         return mongo.getConverter().read(type, (DBObject) value);
     }
 
+    private BasicDBObject findByIdQuery(String key) {
+        BasicDBObject query = new BasicDBObject("_id", key);
+        if (application != null) {
+            query.append("$or", Arrays.asList(
+                    new BasicDBObject("app", null),
+                    new BasicDBObject("app", application)
+            ));
+        }
+        return query;
+    }
+
     private void reload() {
-        Map<String, Object> newconfigs = new HashMap<String, Object>();
-        try {
-            for (DBObject entry : mongo.getCollection(collection).find()) {
-                newconfigs.put((String) entry.get(KEY), convertValueToResult(entry.get("value"), null));
+        BasicDBObject query = new BasicDBObject("$or", Arrays.asList(
+                new BasicDBObject("app", null),
+                new BasicDBObject("app", application)
+        ));
+        Map<String, Object> newconfigs = new HashMap<>();
+        for (DBObject entry : mongo.getCollection(collection).find(query)) {
+            try {
+                newconfigs.put((String) entry.get("_id"), convertValueToResult(entry.get("value"), null));
+            } catch (RuntimeException e) {
+                logger.error("Unable to update configuration {}", entry.get("_id"), e);
             }
-        } catch (IllegalStateException e) {
-            logger.error("Unable to check for configuration updates!", e);
-        } catch (RuntimeException e) {
-            logger.error("Unable to update configurations due to unexpected error", e);
         }
         super.reload(newconfigs);
     }

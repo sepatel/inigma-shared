@@ -53,8 +53,7 @@ public abstract class RestService {
     private static final String REQUEST_FOR_FIELD_CHECK = "org.inigma.request.fieldCheck";
     private static final String HTTP_STATUS = "org.inigma.request.httpStatus";
     private static final String RESPONSE_OBJECT = "org.inigma.response.object";
-    private static final Splitter PATH_SPLITTER = Splitter.on(CharMatcher.anyOf(".[]")).trimResults()
-            .omitEmptyStrings();
+    private static final Splitter PATH_SPLITTER = Splitter.on(CharMatcher.anyOf(".[]")).trimResults().omitEmptyStrings();
 
     static {
         MAPPER.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -321,13 +320,6 @@ public abstract class RestService {
                 ((Map) responseObject).put("errors", errors);
             }
         }
-        /*
-        if (isErrorCondition() && !(responseObject instanceof Map)) {
-            responseObject = Collections.singletonMap("errors", errors);
-        } else if (responseObject instanceof Map) {
-            ((Map) responseObject).put("errors", errors);
-        }
-        */
 
         HttpStatus status = getHttpStatus();
         // It is ok to have no errors but return an error code. It is not ok to have errors but return a success.
