@@ -1,26 +1,24 @@
 package org.inigma.shared.crypto;
 
-import static org.junit.Assert.*;
-
-import org.inigma.shared.crypto.CryptoService;
-import org.inigma.shared.crypto.RsaKeyPair;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CryptoServiceTest {
+import static org.junit.Assert.*;
+
+public class CryptoUtilsTest {
     private RsaKeyPair keypair;
-    
+
     @Before
     public void setup() throws Exception {
-        keypair = CryptoService.generateKeyPair(512);
+        keypair = CryptoUtils.generateKeyPair(512);
     }
 
     @Test
     public void encryptAndDecryptSimple() {
         String message = "Hello World";
-        String encrypt = CryptoService.encrypt(message, keypair.getPublicKey());
+        String encrypt = CryptoUtils.encrypt(message, keypair.getPublicKey());
         assertNotSame(message, encrypt);
-        assertEquals(message, CryptoService.decrypt(encrypt, keypair.getPrivateKey()));
+        assertEquals(message, CryptoUtils.decrypt(encrypt, keypair.getPrivateKey()));
     }
 
     @Test
@@ -30,33 +28,33 @@ public class CryptoServiceTest {
             growth.append((char) (i % 26 + 97));
         }
         String message = growth.toString();
-        String encrypt = CryptoService.encrypt(message, keypair.getPublicKey());
+        String encrypt = CryptoUtils.encrypt(message, keypair.getPublicKey());
         assertNotSame(message, encrypt);
-        assertEquals(message, CryptoService.decrypt(encrypt, keypair.getPrivateKey()));
+        assertEquals(message, CryptoUtils.decrypt(encrypt, keypair.getPrivateKey()));
     }
 
     @Test
     public void encryptAndDecryptNull() {
         String message = null;
-        String encrypt = CryptoService.encrypt(message, keypair.getPublicKey());
+        String encrypt = CryptoUtils.encrypt(message, keypair.getPublicKey());
         assertNull(message, encrypt);
-        assertEquals(message, CryptoService.decrypt(encrypt, keypair.getPrivateKey()));
+        assertEquals(message, CryptoUtils.decrypt(encrypt, keypair.getPrivateKey()));
     }
 
     @Test
     public void signatureAndVerification() {
         String message = "Hello World";
-        String encrypt = CryptoService.sign(message, keypair.getPrivateKey());
+        String encrypt = CryptoUtils.sign(message, keypair.getPrivateKey());
         assertNotSame(message, encrypt);
-        assertEquals(message, CryptoService.verify(encrypt, keypair.getPublicKey()));
+        assertEquals(message, CryptoUtils.verify(encrypt, keypair.getPublicKey()));
     }
-    
+
     @Test
     public void oneWayHashing() {
         String password = "fiddle";
-        String hash = CryptoService.hashWithSHA256(password);
+        String hash = CryptoUtils.hashWithSHA256(password);
         assertNotSame(password, hash);
-        assertEquals(hash, CryptoService.hashWithSHA256(password));
+        assertEquals(hash, CryptoUtils.hashWithSHA256(password));
         assertEquals("f8LUlo0uaMb47luIM0jcssKzfRnvErsQIxabvKM7Up0=", hash);
     }
 }
